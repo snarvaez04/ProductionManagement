@@ -1,7 +1,17 @@
-using ProductionManagement.Client.Pages;
+using ProductionManagement.Data.Extensions;
 using ProductionManagement.Components;
+using ProductionManagement.Components.Layout;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var connectionString = builder.Configuration.GetConnectionString("ProductionManagement")
+    ?? throw new InvalidOperationException("Connection string not found.");
+
+//Migrate database
+DatabaseMigrator.Migrate(connectionString);
+
+//Register DBContext and data services
+ServiceRegistrations.AddDataServices(builder.Services, connectionString);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

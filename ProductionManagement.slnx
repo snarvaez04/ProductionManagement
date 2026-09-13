@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="ProductionManagement.Data/ProductionManagement.Data.csproj" />
   <Project Path="ProductionManagement/ProductionManagement.Client/ProductionManagement.Client.csproj" />
-  <Project Path="ProductionManagement/ProductionManagement/ProductionManagement.Server.csproj" />
+  <Project Path="ProductionManagement/ProductionManagement/ProductionManagement.csproj" />
 </Solution>
