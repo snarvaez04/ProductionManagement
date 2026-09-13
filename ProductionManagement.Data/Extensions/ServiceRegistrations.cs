@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using ProductionManagement.Data.Context;
-using ProductionManagement.Data.Services;
 
 namespace ProductionManagement.Data.Extensions
 {
