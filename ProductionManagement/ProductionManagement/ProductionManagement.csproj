@@ -11,6 +11,11 @@
     <ProjectReference Include="..\..\ProductionManagement.Data\ProductionManagement.Data.csproj" />
     <ProjectReference Include="..\ProductionManagement.Client\ProductionManagement.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.12" />
+    <PackageReference Include="MudBlazor" Version="9.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>

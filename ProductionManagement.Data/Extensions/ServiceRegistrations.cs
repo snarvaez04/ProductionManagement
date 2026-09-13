@@ -8,7 +8,6 @@ namespace ProductionManagement.Data.Extensions
         public static IServiceCollection AddDataServices(this IServiceCollection services, string connectionString)
         {
             services.AddSingleton<IDbContext>(new DbContext(connectionString));
-            //services.AddScoped<IEmployeeRepository, EmployeeRepository>();
 
             return services;
         }
