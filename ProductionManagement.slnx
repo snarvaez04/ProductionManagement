@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="ProductionManagement.Data/ProductionManagement.Data.csproj" />
+  <Project Path="ProductionManagement.Shared/ProductionManagement.Shared.csproj" Id="33682deb-ea14-4944-a585-1a1a34fba8cd" />
   <Project Path="ProductionManagement/ProductionManagement.Client/ProductionManagement.Client.csproj" />
   <Project Path="ProductionManagement/ProductionManagement/ProductionManagement.csproj" />
 </Solution>
