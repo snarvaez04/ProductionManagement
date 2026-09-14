@@ -1,4 +1,4 @@
-﻿CREATE VIEW dbo.vw_ProductionOrderList
+﻿CREATE OR ALTER VIEW dbo.vw_ProductionOrderList
 AS
 SELECT
     po.Id,
@@ -16,7 +16,18 @@ SELECT
 
     COUNT(c.Id) AS CoilCount,
 
-    COALESCE(SUM(c.Weight), 0) AS ProducedWeight,
+    COALESCE
+    (
+        SUM
+        (
+            CASE
+                WHEN c.Status = 'Completed'
+                THEN c.Weight
+                ELSE 0
+            END
+        ),
+        0
+    ) AS ProducedWeight,
 
     SUM
     (
@@ -30,14 +41,13 @@ SELECT
     SUM
     (
         CASE
-            WHEN c.Status = 'OnHold'
+            WHEN c.Status = 'On Hold'
             THEN 1
             ELSE 0
         END
     ) AS OnHoldCoilCount
 
 FROM dbo.ProductionOrders AS po
-
 LEFT JOIN dbo.Coils AS c
     ON c.ProductionOrderId = po.Id
 
@@ -57,7 +67,8 @@ GROUP BY
 GO
 
 
-CREATE PROCEDURE dbo.usp_ProductionOrder_GetList
+
+CREATE OR ALTER PROCEDURE dbo.usp_ProductionOrder_GetList
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -86,7 +97,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE dbo.usp_ProductionOrder_GetById
+CREATE OR ALTER PROCEDURE dbo.usp_ProductionOrder_GetById
     @Id INT
 AS
 BEGIN

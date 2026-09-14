@@ -3,11 +3,11 @@ using Microsoft.Data.SqlClient;
 
 namespace ProductionManagement.Data.Context
 {
-    public class DbContext : IDbContext
+    public class DbConnectionFactory : IDbConnectionFactory
     {
         private readonly string _connectionString;
 
-        public DbContext(string connectionString)
+        public DbConnectionFactory(string connectionString)
         {
             if (!string.IsNullOrWhiteSpace(connectionString))
                 _connectionString = connectionString;
@@ -19,15 +19,3 @@ namespace ProductionManagement.Data.Context
             => new SqlConnection(_connectionString);
     }
 }
-
-
-
-
-
-
-public interface IDbContext
-{
-    IDbConnection CreateConnection();
-}
-
-

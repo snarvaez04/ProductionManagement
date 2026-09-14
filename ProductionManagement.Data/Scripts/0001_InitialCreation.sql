@@ -225,6 +225,3 @@ GO
 CREATE INDEX IX_NonConformances_Status
     ON dbo.NonConformances(Status);
 GO
-CREATE INDEX IX_NonConformances_Status
-    ON dbo.NonConformances(Status);
-GO

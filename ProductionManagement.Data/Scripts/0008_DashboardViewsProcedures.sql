@@ -1,10 +1,10 @@
-﻿CREATE VIEW dbo.vw_DashboardProductionSummary
+﻿CREATE OR ALTER VIEW dbo.vw_DashboardProductionSummary
 AS
 SELECT
     COUNT
     (
         CASE
-            WHEN Status IN ('Released', 'InProduction')
+            WHEN Status = 'Released'
             THEN 1
         END
     ) AS ActiveProductionOrders,
@@ -21,7 +21,8 @@ FROM dbo.ProductionOrders;
 GO
 
 
-CREATE VIEW dbo.vw_DashboardCoilSummary
+
+CREATE OR ALTER VIEW dbo.vw_DashboardCoilSummary
 AS
 SELECT
 
@@ -30,7 +31,7 @@ SELECT
     COUNT
     (
         CASE
-            WHEN Status = 'InProduction'
+            WHEN Status = 'In Production'
             THEN 1
         END
     ) AS CoilsInProduction,
@@ -38,15 +39,7 @@ SELECT
     COUNT
     (
         CASE
-            WHEN Status = 'AwaitingInspection'
-            THEN 1
-        END
-    ) AS CoilsAwaitingInspection,
-
-    COUNT
-    (
-        CASE
-            WHEN Status = 'OnHold'
+            WHEN Status = 'On Hold'
             THEN 1
         END
     ) AS CoilsOnHold,
@@ -59,20 +52,37 @@ SELECT
         END
     ) AS ReleasedCoils,
 
+    COUNT
+    (
+        CASE
+            WHEN Status = 'Completed'
+            THEN 1
+        END
+    ) AS CompletedCoils,
+
+    COUNT
+    (
+        CASE
+            WHEN Status = 'Scrapped'
+            THEN 1
+        END
+    ) AS ScrappedCoils,
+
     COALESCE(SUM(Weight), 0) AS TotalProductionWeight
 
 FROM dbo.Coils;
 GO
 
 
-CREATE VIEW dbo.vw_DashboardNonConformanceSummary
+
+CREATE OR ALTER VIEW dbo.vw_DashboardNonConformanceSummary
 AS
 SELECT
 
     COUNT
     (
         CASE
-            WHEN Status IN ('Open', 'UnderReview')
+            WHEN Status IN ('Open', 'Investigating')
             THEN 1
         END
     ) AS OpenNonConformances,
@@ -81,7 +91,7 @@ SELECT
     (
         CASE
             WHEN Severity = 'Critical'
-                 AND Status IN ('Open', 'UnderReview')
+                 AND Status IN ('Open', 'Investigating')
             THEN 1
         END
     ) AS CriticalNonConformances,
@@ -90,13 +100,30 @@ SELECT
     (
         CASE
             WHEN Severity = 'Major'
-                 AND Status IN ('Open', 'UnderReview')
+                 AND Status IN ('Open', 'Investigating')
             THEN 1
         END
-    ) AS MajorNonConformances
+    ) AS MajorNonConformances,
+
+    COUNT
+    (
+        CASE
+            WHEN Status = 'Resolved'
+            THEN 1
+        END
+    ) AS ResolvedNonConformances,
+
+    COUNT
+    (
+        CASE
+            WHEN Status = 'Closed'
+            THEN 1
+        END
+    ) AS ClosedNonConformances
 
 FROM dbo.NonConformances;
 GO
+
 
 
 CREATE VIEW dbo.vw_DashboardEquipmentSummary
@@ -155,15 +182,18 @@ BEGIN
         -- Coils
         c.TotalCoils,
         c.CoilsInProduction,
-        c.CoilsAwaitingInspection,
         c.CoilsOnHold,
         c.ReleasedCoils,
+        c.CompletedCoils,
+        c.ScrappedCoils,
         c.TotalProductionWeight,
 
         -- Non-Conformances
         nc.OpenNonConformances,
         nc.CriticalNonConformances,
         nc.MajorNonConformances,
+        nc.ResolvedNonConformances,
+        nc.ClosedNonConformances,
 
         -- Equipment
         e.TotalEquipment,
@@ -181,6 +211,7 @@ BEGIN
     CROSS JOIN dbo.vw_DashboardEquipmentSummary AS e;
 END;
 GO
+
 
 CREATE PROCEDURE dbo.usp_Dashboard_GetRecentActivity
     @Top INT = 10
