@@ -14,8 +14,4 @@
     <PackageReference Include="MudBlazor" Version="9.9.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
 </Project>
