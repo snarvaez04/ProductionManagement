@@ -3,8 +3,6 @@ namespace ProductionManagement.Shared.DTOs
 {
     public sealed class UpdateProductionOrderRequest
     {
-        public int Id { get; init; }
-
         public string CustomerName { get; init; } = string.Empty;
 
         public string ProductCode { get; init; } = string.Empty;

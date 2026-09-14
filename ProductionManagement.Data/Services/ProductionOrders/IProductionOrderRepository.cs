@@ -10,7 +10,7 @@ namespace ProductionManagement.Data.Services
 
         Task<int> CreateAsync(CreateProductionOrderRequest request);
 
-        Task UpdateAsync(UpdateProductionOrderRequest request);
+        Task UpdateAsync(int id, UpdateProductionOrderRequest request);
 
         Task ReleaseAsync(int id);
 

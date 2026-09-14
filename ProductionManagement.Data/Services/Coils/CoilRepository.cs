@@ -52,7 +52,7 @@ namespace ProductionManagement.Data.Services
                 commandType: CommandType.StoredProcedure);
         }
 
-        public async Task UpdateAsync(UpdateCoilRequest request)
+        public async Task UpdateAsync(int id, UpdateCoilRequest request)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -60,25 +60,11 @@ namespace ProductionManagement.Data.Services
                 "dbo.usp_Coil_Update",
                 new
                 {
-                    request.Id,
+                    Id = id,
                     request.Weight,
                     request.Width,
                     request.Thickness,
                     request.CurrentLocation
-                },
-                commandType: CommandType.StoredProcedure);
-        }
-
-        public async Task ChangeStatusAsync(int id, string status)
-        {
-            using var connection = _connectionFactory.CreateConnection();
-
-            await connection.ExecuteAsync(
-                "dbo.usp_Coil_ChangeStatus",
-                new
-                {
-                    Id = id,
-                    Status = status
                 },
                 commandType: CommandType.StoredProcedure);
         }

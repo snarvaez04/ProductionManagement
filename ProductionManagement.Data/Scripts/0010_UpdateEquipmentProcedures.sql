@@ -112,6 +112,18 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.Equipment
+        WHERE Id = @Id
+    )
+    BEGIN
+        ;THROW 50016,
+            'Equipment was not found.',
+            1;
+    END;
+
     IF EXISTS
     (
         SELECT 1
@@ -126,36 +138,5 @@ BEGIN
 
     DELETE FROM dbo.Equipment
     WHERE Id = @Id;
-
-    IF @@ROWCOUNT = 0
-    BEGIN
-        ;THROW 50016,
-            'Equipment was not found.',
-            1;
-    END;
-END;
-GO
-
-CREATE OR ALTER PROCEDURE dbo.usp_ProductionEvent_GetByEquipment
-    @EquipmentId INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT
-        Id,
-        CoilId,
-        CoilNumber,
-        EquipmentId,
-        EquipmentNumber,
-        EquipmentName,
-        EventType,
-        EventDate,
-        OperatorName,
-        Notes
-    FROM dbo.vw_ProductionEventList
-    WHERE EquipmentId = @EquipmentId
-    ORDER BY
-        EventDate DESC;
 END;
 GO

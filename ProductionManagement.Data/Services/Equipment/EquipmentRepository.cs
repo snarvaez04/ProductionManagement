@@ -54,8 +54,7 @@ namespace ProductionManagement.Data.Services
                 commandType: CommandType.StoredProcedure);
         }
 
-        public async Task UpdateAsync(
-            UpdateEquipmentRequest request)
+        public async Task UpdateAsync(int Id, UpdateEquipmentRequest request)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -63,7 +62,7 @@ namespace ProductionManagement.Data.Services
                 "dbo.usp_Equipment_Update",
                 new
                 {
-                    request.Id,
+                    Id = Id,
                     request.Name,
                     request.EquipmentType,
                     request.Location

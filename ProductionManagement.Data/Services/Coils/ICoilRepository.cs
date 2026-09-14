@@ -10,9 +10,7 @@ namespace ProductionManagement.Data.Services
 
         Task<int> CreateAsync(CreateCoilRequest request);
 
-        Task UpdateAsync(UpdateCoilRequest request);
-
-        Task ChangeStatusAsync(int id, string status);
+        Task UpdateAsync(int Id, UpdateCoilRequest request);
 
         Task DeleteAsync(int id);
     }

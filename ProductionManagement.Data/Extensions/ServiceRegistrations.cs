@@ -13,7 +13,9 @@ namespace ProductionManagement.Data.Extensions
             services.AddScoped<IDashboardRepository, DashboardRepository>();
             services.AddScoped<IProductionOrderRepository,ProductionOrderRepository>();
             services.AddScoped<IEquipmentRepository,EquipmentRepository>();
-
+            services.AddScoped<IProductionEventRepository,ProductionEventRepository>();
+            services.AddScoped<IQualityInspectionRepository,QualityInspectionRepository>();
+            services.AddScoped<INonConformanceRepository, NonConformanceRepository>();
 
             return services;
         }

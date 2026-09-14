@@ -99,7 +99,7 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE dbo.usp_Coil_Create
+CREATE OR ALTER PROCEDURE dbo.usp_Coil_Create
     @CoilNumber NVARCHAR(50),
     @ProductionOrderId INT,
     @Weight DECIMAL(18,2),
@@ -110,6 +110,18 @@ CREATE PROCEDURE dbo.usp_Coil_Create
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.ProductionOrders
+        WHERE Id = @ProductionOrderId
+    )
+    BEGIN
+        ;THROW 50041,
+            'The specified production order does not exist.',
+            1;
+    END;
 
     INSERT INTO dbo.Coils
     (
@@ -132,14 +144,13 @@ BEGIN
         @CurrentLocation
     );
 
-    DECLARE @NewCoilId INT = SCOPE_IDENTITY();
-
-    SELECT @NewCoilId AS Id;
+    SELECT CAST(SCOPE_IDENTITY() AS INT) AS Id;
 END;
 GO
 
 
-CREATE PROCEDURE dbo.usp_Coil_Update
+
+CREATE OR ALTER PROCEDURE dbo.usp_Coil_Update
     @Id INT,
     @Weight DECIMAL(18,2),
     @Width DECIMAL(10,3),
@@ -148,6 +159,18 @@ CREATE PROCEDURE dbo.usp_Coil_Update
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.Coils
+        WHERE Id = @Id
+    )
+    BEGIN
+        ;THROW 50042,
+            'Coil was not found.',
+            1;
+    END;
 
     UPDATE dbo.Coils
     SET
@@ -159,19 +182,6 @@ BEGIN
 END;
 GO
 
-CREATE PROCEDURE dbo.usp_Coil_ChangeStatus
-    @Id INT,
-    @Status NVARCHAR(30)
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    UPDATE dbo.Coils
-    SET
-        Status = @Status
-    WHERE Id = @Id;
-END;
-GO
 
 CREATE TABLE dbo.CoilAudit
 (
@@ -231,6 +241,18 @@ CREATE PROCEDURE dbo.usp_Coil_Delete
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    IF EXISTS
+    (
+        SELECT 1
+        FROM dbo.ProductionEvents
+        WHERE CoilId = @Id
+    )
+    BEGIN
+        ;THROW 50040,
+            'Coil cannot be deleted because production history exists.',
+            1;
+    END;
 
     DELETE FROM dbo.Coils
     WHERE Id = @Id;

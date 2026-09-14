@@ -37,8 +37,7 @@ namespace ProductionManagement.Data.Services
                 commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<int> CreateAsync(
-            CreateProductionOrderRequest request)
+        public async Task<int> CreateAsync(CreateProductionOrderRequest request)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -59,8 +58,7 @@ namespace ProductionManagement.Data.Services
                 commandType: CommandType.StoredProcedure);
         }
 
-        public async Task UpdateAsync(
-            UpdateProductionOrderRequest request)
+        public async Task UpdateAsync(int id, UpdateProductionOrderRequest request)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -68,7 +66,7 @@ namespace ProductionManagement.Data.Services
                 "dbo.usp_ProductionOrder_Update",
                 new
                 {
-                    request.Id,
+                    Id = id,
                     request.CustomerName,
                     request.ProductCode,
                     request.SteelGrade,
