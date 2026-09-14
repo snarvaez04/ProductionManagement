@@ -23,7 +23,7 @@ namespace ProductionManagement.Data.Services
                 commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<IReadOnlyList<ProductionEventDto>> GetRecentActivityAsync(int top = 10)
+        public async Task<IEnumerable<ProductionEventDto>> GetRecentActivityAsync(int top = 10)
         {
             using var connection = _connectionFactory.CreateConnection();
 
