@@ -9,14 +9,14 @@ BEGIN
 
     UPDATE dbo.ProductionOrders
     SET
-        Status = 'Released'
+        Status = 'Approved'
     WHERE Id = @Id
       AND Status = 'Draft';
 
     IF @@ROWCOUNT = 0
     BEGIN
         ;THROW 50003,
-            'Production order cannot be released because it does not exist or is not in Draft status.',
+            'Production order cannot be approved because it does not exist or is not in Draft status.',
             1;
     END;
 END;
@@ -33,12 +33,12 @@ BEGIN
     SET
         Status = 'InProduction'
     WHERE Id = @Id
-      AND Status = 'Released';
+      AND Status = 'Approved';
 
     IF @@ROWCOUNT = 0
     BEGIN
         ;THROW 50004,
-            'Production order cannot start because it does not exist or is not Released.',
+            'Production order cannot start because it does not exist or is not approved.',
             1;
     END;
 END;

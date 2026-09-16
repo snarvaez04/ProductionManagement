@@ -4,7 +4,7 @@ SELECT
     COUNT
     (
         CASE
-            WHEN Status = 'Released'
+            WHEN Status = 'Approved'
             THEN 1
         END
     ) AS ActiveProductionOrders,

@@ -15,7 +15,9 @@
     @if(_loading)
     {
         <MudProgressLinear Indeterminate="true"/>
-        }else if(_item is null){
+    }
+    else if(_item is null)
+    {
         <MudAlert Severity="Severity.Error">
             Order not found.
         </MudAlert>
@@ -67,13 +69,13 @@
             </MudText>
         </MudPaper>
         <div class="mt-4 d-flex flex-wrap gap-2">
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Release">
-                Release
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Approve">
+                Approve
             </MudButton>
-            <MudButton Color="Color.Secondary" OnClick="Start">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Start">
                 Start
             </MudButton>
-            <MudButton Color="Color.Success" OnClick="Complete">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Complete">
                 Complete
             </MudButton>
             <MudButton Href="/coils">
@@ -108,9 +110,9 @@
             _loading = false;
         }
     }
-    private async Task Release()
+    private async Task Approve()
     {
-        await Action((id) => Api.ReleaseAsync(id), "Order released.");
+        await Action((id) => Api.ReleaseAsync(id), "Order approved.");
     }
     private async Task Start()
     {
