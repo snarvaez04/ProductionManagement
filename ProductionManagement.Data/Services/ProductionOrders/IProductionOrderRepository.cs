@@ -4,7 +4,7 @@ namespace ProductionManagement.Data.Services
 {
     public interface IProductionOrderRepository
     {
-        Task<IEnumerable<ProductionOrderListDto>> GetListAsync();
+        Task<List<ProductionOrderListDto>> GetListAsync();
 
         Task<ProductionOrderDetailsDto?> GetByIdAsync(int id);
 

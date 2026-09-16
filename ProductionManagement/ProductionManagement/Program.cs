@@ -1,11 +1,12 @@
-using ProductionManagement.Data.Extensions;
 using ProductionManagement.Components;
-using ProductionManagement.Components.Layout;
-using MudBlazor.Services;
+using ProductionManagement.Data.Extensions;
+using ProductionManagement.Exceptions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 var connectionString = builder.Configuration.GetConnectionString("ProductionManagement")
     ?? throw new InvalidOperationException("Connection string not found.");
@@ -19,8 +20,6 @@ ServiceRegistrations.AddDataServices(builder.Services, connectionString);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
-
-builder.Services.AddMudServices();
 
 var app = builder.Build();
 
@@ -37,6 +36,7 @@ else
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
+app.UseExceptionHandler();
 
 app.UseRouting();
 app.UseAntiforgery();

@@ -1,0 +1,176 @@
+@page "/equipment"
+@using ProductionManagement.Client.Services
+@using ProductionManagement.Shared.DTOs
+@inject EquipmentApiClient Api
+@inject ISnackbar Snackbar
+
+<PageTitle>
+    SteelOps - Equipment
+</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Large" Class="pa-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">
+                Equipment
+            </MudText>
+            <MudText Color="Color.Secondary">
+                Equipment used in production.
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="New">
+            New Equipment
+        </MudButton>
+    </div>
+    @if(_editing)
+    {
+        <MudPaper Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6">
+                @(_editId.HasValue?"Edit Equipment":"New Equipment")
+            </MudText>
+            <MudGrid Class="mt-1">
+                @if(!_editId.HasValue)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Equipment Number" @bind-Value="_number" />
+                    </MudItem>
+                }
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Name" @bind-Value="_name" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Type" @bind-Value="_type" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Location" @bind-Value="_location" />
+                </MudItem>
+            </MudGrid>
+            <div class="mt-4">
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
+                    Save
+                </MudButton>
+                <MudButton Class="ml-2" OnClick="Cancel">
+                    Cancel
+                </MudButton>
+            </div>
+        </MudPaper>
+    }
+    <MudPaper Class="pa-4">
+        <MudTextField Label="Search" @bind-Value="_search" Clearable="true" Class="mb-3"/>
+        @if(_loading)
+        {
+            <MudProgressLinear Indeterminate="true"/>
+        }
+        else
+        {
+            <MudTable Items="Filtered" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>
+                        Number
+                    </MudTh>
+                    <MudTh>
+                        Name
+                    </MudTh>
+                    <MudTh>
+                        Type
+                    </MudTh>
+                    <MudTh>
+                        Location
+                    </MudTh>
+                    <MudTh>
+                        Status
+                    </MudTh>
+                    <MudTh>
+                    </MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        <MudLink Href="@($"/equipment/{context.Id}")">
+                            @context.EquipmentNumber
+                        </MudLink>
+                    </MudTd>
+                    <MudTd>
+                        @context.Name
+                    </MudTd>
+                    <MudTd>
+                        @context.EquipmentType
+                    </MudTd>
+                    <MudTd>
+                        @context.Location
+                    </MudTd>
+                    <MudTd>
+                        @context.Status
+                    </MudTd>
+                    <MudTd>
+                        <MudButton Size="Size.Small" OnClick="@(()=> Edit(context))">Edit
+                        </MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code
+{
+    private IReadOnlyList<EquipmentListDto> _items = [];
+    private bool _loading, _editing;
+    private int? _editId;
+    private string _search = "", _number = "", _name = "", _type = "", _location = "";
+    private IEnumerable<EquipmentListDto> Filtered =>_items.Where(x =>string.IsNullOrWhiteSpace(_search)||$"{x.EquipmentNumber} {x.Name} {x.EquipmentType} {x.Location} {x.Status}".Contains(_search, StringComparison.OrdinalIgnoreCase));
+    protected override Task OnInitializedAsync() =>Load();
+    private async Task Load()
+    {
+        _loading = true;
+        try
+        {
+            _items = (await Api.GetListAsync()).ToList();
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+    private void New()
+    {
+        _editId = null;
+        _number = _name = _type = _location = "";
+        _editing = true;
+    }
+    private void Edit(EquipmentListDto x)
+    {
+        _editId = x.Id;
+        _number = x.EquipmentNumber;
+        _name = x.Name;
+        _type = x.EquipmentType;
+        _location = x.Location;
+        _editing = true;
+    }
+    private async Task Save()
+    {
+        try
+        {
+            if(_editId is null)await Api.CreateAsync(new CreateEquipmentRequest
+            {
+                EquipmentNumber = _number, Name = _name, EquipmentType = _type, Location = _location
+            }
+            );
+            else await Api.UpdateAsync(_editId.Value, new UpdateEquipmentRequest
+            {
+                Name = _name, EquipmentType = _type, Location = _location
+            }
+            );
+            _editing = false;
+            await Load();
+            Snackbar.Add("Equipment saved.", Severity.Success);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+    private void Cancel() =>_editing = false;
+}

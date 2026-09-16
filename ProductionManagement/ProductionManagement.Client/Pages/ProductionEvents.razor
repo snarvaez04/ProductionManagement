@@ -1,0 +1,193 @@
+@page "/production-events"
+@using ProductionManagement.Client.Services
+@using ProductionManagement.Shared.DTOs
+@inject ProductionEventApiClient Api
+@inject CoilApiClient CoilsApi
+@inject EquipmentApiClient EquipmentApi
+@inject ISnackbar Snackbar
+
+<PageTitle>
+    SteelOps - Production Events
+</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Large" Class="pa-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">
+                Production Events
+            </MudText>
+            <MudText Color="Color.Secondary">
+                A simple history of production activity.
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="New">
+            Record Event
+        </MudButton>
+    </div>
+    @if(_editing)
+    {
+        <MudPaper Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6">
+                Record Production Event
+            </MudText>
+            <MudGrid Class="mt-1">
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="int" Label="Coil" @bind-Value="_coilId">
+                        @foreach(var c in _coils)
+                        {
+                            <MudSelectItem Value="c.Id">
+                                @c.CoilNumber
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="int?" Label="Equipment" @bind-Value="_equipmentId" Clearable="true">
+                        @foreach(var e in _equipment)
+                        {
+                            <MudSelectItem Value="((int?)e.Id)">
+                                @e.EquipmentNumber
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" Label="Event Type" @bind-Value="_eventType">
+                        <MudSelectItem Value="@("Production Started")">
+                            Production Started
+                        </MudSelectItem>
+                        <MudSelectItem Value="@("Production Completed")">
+                            Production Completed
+                        </MudSelectItem>
+                        <MudSelectItem Value="@("Quality Hold")">
+                            Quality Hold
+                        </MudSelectItem>
+                        <MudSelectItem Value="@("Quality Released")">
+                            Quality Released
+                        </MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Operator" @bind-Value="_operator" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Notes" Lines="2" @bind-Value="_notes" />
+                </MudItem>
+            </MudGrid>
+            <div class="mt-4">
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
+                    Save
+                </MudButton>
+                <MudButton Class="ml-2" OnClick="Cancel">
+                    Cancel
+                </MudButton>
+            </div>
+        </MudPaper>
+    }
+    <MudPaper Class="pa-4">
+        <MudTextField Label="Search" @bind-Value="_search" Clearable="true" Class="mb-3"/>
+        @if(_loading)
+        {
+            <MudProgressLinear Indeterminate="true"/>
+        }
+        else
+        {
+            <MudTable Items="Filtered" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>
+                        Date
+                    </MudTh>
+                    <MudTh>
+                        Coil
+                    </MudTh>
+                    <MudTh>
+                        Event
+                    </MudTh>
+                    <MudTh>
+                        Equipment
+                    </MudTh>
+                    <MudTh>
+                        Operator
+                    </MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        @context.EventDate.ToLocalTime().ToString("g")
+                    </MudTd>
+                    <MudTd>
+                        @context.CoilNumber
+                    </MudTd>
+                    <MudTd>
+                        @context.EventType
+                    </MudTd>
+                    <MudTd>
+                        @(context.EquipmentNumber??"-")
+                    </MudTd>
+                    <MudTd>
+                        @(context.OperatorName??"-")
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code
+{
+    private IReadOnlyList<ProductionEventListDto> _items = [];
+    private IReadOnlyList<CoilListDto> _coils = [];
+    private IReadOnlyList<EquipmentListDto> _equipment = [];
+    private bool _loading, _editing;
+    private string _search = "", _eventType = "Production Started", _operator = "", _notes = "";
+    private int _coilId;
+    private int? _equipmentId;
+    private IEnumerable<ProductionEventListDto> Filtered =>_items.Where(x =>string.IsNullOrWhiteSpace(_search)||$"{x.CoilNumber} {x.EventType} {x.EquipmentNumber} {x.OperatorName} {x.Notes}".Contains(_search, StringComparison.OrdinalIgnoreCase));
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+        _coils = await CoilsApi.GetListAsync();
+        _equipment = (await EquipmentApi.GetListAsync()).ToList();
+    }
+    private async Task Load()
+    {
+        _loading = true;
+        try
+        {
+            _items = (await Api.GetListAsync()).ToList();
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+    private void New()
+    {
+        _coilId = 0;
+        _equipmentId = null;
+        _eventType = "Production Started";
+        _operator = _notes = "";
+        _editing = true;
+    }
+    private async Task Save()
+    {
+        try
+        {
+            await Api.CreateAsync(new CreateProductionEventRequest
+            {
+                CoilId = _coilId, EquipmentId = _equipmentId, EventType = _eventType, EventDate = DateTime.Now, OperatorName = _operator, Notes = _notes
+            }
+            );
+            _editing = false;
+            await Load();
+            Snackbar.Add("Event saved.", Severity.Success);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+    private void Cancel() =>_editing = false;
+}

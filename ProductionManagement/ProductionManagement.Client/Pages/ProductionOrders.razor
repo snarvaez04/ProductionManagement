@@ -1,0 +1,224 @@
+@page "/production-orders"
+@using ProductionManagement.Client.Services
+@using ProductionManagement.Shared.DTOs
+@inject ProductionOrderApiClient Api
+@inject ISnackbar Snackbar
+
+<PageTitle>
+    SteelOps - Production Orders
+</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Large" Class="pa-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">
+                Production Orders
+            </MudText>
+            <MudText Color="Color.Secondary">
+                Create and manage production orders.
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="NewOrder">
+            New Order
+        </MudButton>
+    </div>
+    @if (_editing)
+    {
+        <MudPaper Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6">
+                @(_editId.HasValue ? "Edit Order" : "New Order")
+            </MudText>
+            <MudGrid Class="mt-1">
+                @if (!_editId.HasValue)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Order Number" @bind-Value="_orderNumber" Required="true" />
+                    </MudItem>
+                }
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Customer" @bind-Value="_customer" Required="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Product" @bind-Value="_product" Required="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Steel Grade" @bind-Value="_grade" Required="true" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="decimal" Label="Target Width" @bind-Value="_width" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="decimal" Label="Target Thickness" @bind-Value="_thickness" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="decimal" Label="Target Weight" @bind-Value="_weight" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField T="int" Label="Quantity" @bind-Value="_quantity" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Due Date" @bind-Date="_dueDate" />
+                </MudItem>
+            </MudGrid>
+            <div class="mt-4">
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
+                    Save
+                </MudButton>
+                <MudButton Class="ml-2" OnClick="CancelEdit">
+                    Cancel
+                </MudButton>
+            </div>
+        </MudPaper>
+    }
+    <MudPaper Class="pa-4">
+        <MudTextField Label="Search" @bind-Value="_search" Class="mb-3" Clearable="true" />
+        @if (_loading)
+        {
+            <MudProgressLinear Indeterminate="true" />
+        }
+        else {
+        <MudTable Items="Filtered" Hover="true" Dense="true" Striped="true">
+            <HeaderContent>
+                <MudTh>
+                    Order
+                </MudTh>
+                <MudTh>
+                    Customer
+                </MudTh>
+                <MudTh>
+                    Product
+                </MudTh>
+                <MudTh>
+                    Status
+                </MudTh>
+                <MudTh>
+                    Coils
+                </MudTh>
+                <MudTh>
+                    Due
+                </MudTh>
+                <MudTh>
+                </MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <MudLink Href="@($"/production-orders/{context.Id}")">
+                        @context.OrderNumber
+                    </MudLink>
+                </MudTd>
+                <MudTd>
+                    @context.CustomerName
+                </MudTd>
+                <MudTd>
+                    @context.ProductCode
+                </MudTd>
+                <MudTd>
+                    @context.Status
+                </MudTd>
+                <MudTd>
+                    @context.CoilCount
+                </MudTd>
+                <MudTd>
+                    @(context.DueDate?.ToString("d") ?? "-")
+                </MudTd>
+                <MudTd>
+                    <MudButton Size="Size.Small" OnClick="@(() => Edit(context))">Edit
+                    </MudButton>
+                    <MudButton Size="Size.Small" Color="Color.Error" OnClick="@(() => Delete(context.Id))">Delete
+                    </MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudPaper>
+</MudContainer>
+
+@code
+{
+    private IReadOnlyList<ProductionOrderListDto> _orders = [];
+    private string _search = string.Empty;
+    private bool _loading;
+    private bool _editing;
+    private int? _editId;
+    private string _orderNumber = "", _customer = "", _product = "", _grade = "";
+    private decimal _width, _thickness, _weight;
+    private int _quantity;
+    private DateTime? _dueDate;
+    private IEnumerable<ProductionOrderListDto> Filtered => _orders.Where(x => string.IsNullOrWhiteSpace(_search) || $"{x.OrderNumber} {x.CustomerName} {x.ProductCode} {x.SteelGrade} {x.Status}".Contains(_search, StringComparison.OrdinalIgnoreCase));
+    protected override Task OnInitializedAsync() => Load();
+    private async Task Load()
+    {
+        _loading = true;
+        try
+        {
+            _orders = await Api.GetListAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+    private void NewOrder()
+    {
+        _editId = null;
+        _orderNumber = _customer = _product = _grade = "";
+        _width = _thickness = _weight = 0;
+        _quantity = 0;
+        _dueDate = null;
+        _editing = true;
+    }
+    private void Edit(ProductionOrderListDto x)
+    {
+        _editId = x.Id;
+        _orderNumber = x.OrderNumber;
+        _customer = x.CustomerName;
+        _product = x.ProductCode;
+        _grade = x.SteelGrade;
+        _width = x.TargetWidth;
+        _thickness = x.TargetThickness;
+        _weight = x.TargetWeight;
+        _quantity = x.Quantity;
+        _dueDate = x.DueDate;
+        _editing = true;
+    }
+    private async Task Save()
+    {
+        try
+        {
+            if (_editId is null) await Api.CreateAsync(new CreateProductionOrderRequest
+            {
+                OrderNumber = _orderNumber, CustomerName = _customer, ProductCode = _product, SteelGrade = _grade, TargetWidth = _width, TargetThickness = _thickness, TargetWeight = _weight, Quantity = _quantity, DueDate = _dueDate
+            }
+            );
+            else await Api.UpdateAsync(_editId.Value, new UpdateProductionOrderRequest
+            {
+                CustomerName = _customer, ProductCode = _product, SteelGrade = _grade, TargetWidth = _width, TargetThickness = _thickness, TargetWeight = _weight, Quantity = _quantity, DueDate = _dueDate
+            }
+            );
+            _editing = false;
+            await Load();
+            Snackbar.Add("Order saved.", Severity.Success);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+    private void CancelEdit() => _editing = false;
+    private async Task Delete(int id)
+    {
+        try
+        {
+            await Api.DeleteAsync(id);
+            await Load();
+            Snackbar.Add("Order deleted.", Severity.Success);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

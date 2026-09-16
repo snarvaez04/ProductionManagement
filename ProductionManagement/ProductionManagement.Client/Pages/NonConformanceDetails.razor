@@ -1,0 +1,108 @@
+@page "/non-conformances/{Id:int}"
+@using ProductionManagement.Client.Services
+@using ProductionManagement.Shared.DTOs
+@inject NonConformanceApiClient Api
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pa-4">
+    <MudButton Href="/non-conformances" Class="mb-3">
+        Back
+    </MudButton>
+    @if(_item is null)
+    {
+        <MudProgressLinear Indeterminate="true"/>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4">
+            @_item.NCNumber
+        </MudText>
+        <MudPaper Class="pa-4 mt-4">
+            <MudText>
+                Coil: @_item.CoilNumber
+            </MudText>
+            <MudText>
+                Type: @_item.Type
+            </MudText>
+            <MudText>
+                Severity: @_item.Severity
+            </MudText>
+            <MudText>
+                Status: @_item.Status
+            </MudText>
+            <MudText>
+                Description: @_item.Description
+            </MudText>
+            <MudText>
+                Created: @_item.CreatedDate.ToLocalTime().ToString("g")
+            </MudText>
+            <MudText>
+                Disposition: @(_item.Disposition??"-")
+            </MudText>
+        </MudPaper>
+        <MudPaper Class="pa-4 mt-4">
+            <MudSelect T="string" Label="Status" @bind-Value="_status">
+                <MudSelectItem Value="@("Open")">
+                    Open
+                </MudSelectItem>
+                <MudSelectItem Value="@("Investigating")">
+                    Investigating
+                </MudSelectItem>
+                <MudSelectItem Value="@("Resolved")">
+                    Resolved
+                </MudSelectItem>
+                <MudSelectItem Value="@("Closed")">
+                    Closed
+                </MudSelectItem>
+            </MudSelect>
+            <MudTextField Label="Disposition" Lines="3" @bind-Value="_disposition" Class="mt-3"/>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save" Class="mt-3">
+                Save
+            </MudButton>
+        </MudPaper>
+        }
+    </MudContainer>
+
+@code
+{
+    [Parameter]public int Id
+    {
+        get;
+        set;
+    }
+    private NonConformanceDetailsDto?_item;
+    private string _status = "Open", _disposition = "";
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            _item = await Api.GetByIdAsync(Id);
+            if(_item is not null)
+            {
+                _status = _item.Status;
+                _disposition = _item.Disposition;
+            }
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+    private async Task Save()
+    {
+        try
+        {
+            await Api.UpdateAsync(Id, new UpdateNonConformanceRequest
+            {
+                Status = _status, Disposition = _disposition
+            }
+            );
+            _item = await Api.GetByIdAsync(Id);
+            Snackbar.Add("Saved.", Severity.Success);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

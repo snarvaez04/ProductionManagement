@@ -15,17 +15,16 @@ namespace ProductionManagement.Data.Services
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<IEnumerable<QualityInspectionListDto>> GetListAsync()
+        public async Task<List<QualityInspectionListDto>> GetListAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            return await connection.QueryAsync<QualityInspectionListDto>(
+            return (await connection.QueryAsync<QualityInspectionListDto>(
                 "dbo.usp_QualityInspection_GetList",
-                commandType: CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure)).AsList();
         }
 
-        public async Task<QualityInspectionDetailsDto?> GetByIdAsync(
-            int id)
+        public async Task<QualityInspectionDetailsDto?> GetByIdAsync(int id)
         {
             using var connection = _connectionFactory.CreateConnection();
 
@@ -39,23 +38,21 @@ namespace ProductionManagement.Data.Services
                     commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<IEnumerable<QualityInspectionDetailsDto>>
-            GetByCoilAsync(int coilId)
+        public async Task<List<QualityInspectionDetailsDto>>GetByCoilAsync(int coilId)
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            return await connection.QueryAsync<
+            return (await connection.QueryAsync<
                 QualityInspectionDetailsDto>(
                     "dbo.usp_QualityInspection_GetByCoil",
                     new
                     {
                         CoilId = coilId
                     },
-                    commandType: CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure)).AsList();
         }
 
-        public async Task<int> CreateAsync(
-            CreateQualityInspectionRequest request)
+        public async Task<int> CreateAsync(CreateQualityInspectionRequest request)
         {
             using var connection = _connectionFactory.CreateConnection();
 

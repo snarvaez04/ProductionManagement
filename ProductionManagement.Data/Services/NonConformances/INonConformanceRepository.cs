@@ -4,11 +4,11 @@ namespace ProductionManagement.Data.Services
 {
     public interface INonConformanceRepository
     {
-        Task<IEnumerable<NonConformanceListDto>> GetListAsync();
+        Task<List<NonConformanceListDto>> GetListAsync();
 
         Task<NonConformanceDetailsDto?> GetByIdAsync(int id);
 
-        Task<IEnumerable<NonConformanceListDto>> GetByCoilAsync(int coilId);
+        Task<List<NonConformanceListDto>> GetByCoilAsync(int coilId);
 
         Task<int> CreateAsync(CreateNonConformanceRequest request);
 

@@ -15,13 +15,13 @@ namespace ProductionManagement.Data.Services
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<IEnumerable<ProductionOrderListDto>> GetListAsync()
+        public async Task<List<ProductionOrderListDto>> GetListAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            return await connection.QueryAsync<ProductionOrderListDto>(
+            return (await connection.QueryAsync<ProductionOrderListDto>(
                 "dbo.usp_ProductionOrder_GetList",
-                commandType: CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure)).AsList();
         }
 
         public async Task<ProductionOrderDetailsDto?> GetByIdAsync(int id)

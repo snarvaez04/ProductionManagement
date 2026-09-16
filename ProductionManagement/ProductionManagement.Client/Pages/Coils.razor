@@ -1,0 +1,224 @@
+@page "/coils"
+@using ProductionManagement.Client.Services
+@using ProductionManagement.Shared.DTOs
+@inject CoilApiClient Api
+@inject ProductionOrderApiClient OrdersApi
+@inject ISnackbar Snackbar
+
+<PageTitle>
+    SteelOps - Coils
+</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Large" Class="pa-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">
+                Coils
+            </MudText>
+            <MudText Color="Color.Secondary">
+                Produced steel coils and their current status.
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="New">
+            New Coil
+        </MudButton>
+    </div>
+    @if (_editing)
+    {
+        <MudPaper Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6">
+                @(_editId.HasValue ? "Edit Coil" : "New Coil")
+            </MudText>
+            <MudGrid Class="mt-1">
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Coil Number" @bind-Value="_number" Disabled="_editId.HasValue" Required="true" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="int" Label="Production Order" @bind-Value="_orderId" Disabled="_editId.HasValue" Required="true">
+                        @foreach(var o in _orders)
+                        {
+                            <MudSelectItem Value="o.Id">
+                                @o.OrderNumber
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Steel Grade" @bind-Value="_grade" Disabled="_editId.HasValue" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Location" @bind-Value="_location" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="decimal" Label="Weight" @bind-Value="_weight" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="decimal" Label="Width" @bind-Value="_width" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="decimal" Label="Thickness" @bind-Value="_thickness" />
+                </MudItem>
+            </MudGrid>
+            <div class="mt-4">
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
+                    Save
+                </MudButton>
+                <MudButton Class="ml-2" OnClick="Cancel">
+                    Cancel
+                </MudButton>
+            </div>
+        </MudPaper>
+    }
+    <MudPaper Class="pa-4">
+        <MudTextField Label="Search" @bind-Value="_search" Clearable="true" Class="mb-3" />
+        @if(_loading)
+        {
+            <MudProgressLinear Indeterminate="true"/>
+        }
+        else
+        {
+            <MudTable Items="Filtered" Dense="true" Hover="true" Striped="true">
+                <HeaderContent>
+                    <MudTh>
+                        Coil
+                    </MudTh>
+                    <MudTh>
+                        Order
+                    </MudTh>
+                    <MudTh>
+                        Grade
+                    </MudTh>
+                    <MudTh>
+                        Weight
+                    </MudTh>
+                    <MudTh>
+                        Status
+                    </MudTh>
+                    <MudTh>
+                        Location
+                    </MudTh>
+                    <MudTh>
+                    </MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        <MudLink Href="@($"/coils/{context.Id}")">
+                            @context.CoilNumber
+                        </MudLink>
+                    </MudTd>
+                    <MudTd>
+                        @context.ProductionOrderNumber
+                    </MudTd>
+                    <MudTd>
+                        @context.SteelGrade
+                    </MudTd>
+                    <MudTd>
+                        @context.Weight.ToString("N1")
+                    </MudTd>
+                    <MudTd>
+                        @context.Status
+                    </MudTd>
+                    <MudTd>
+                        @(context.CurrentLocation ?? "-")
+                    </MudTd>
+                    <MudTd>
+                        <MudButton Size="Size.Small" OnClick="@(()=> Edit(context))">Edit
+                        </MudButton>
+                        <MudButton Size="Size.Small" Color="Color.Error" OnClick="@(()=> Delete(context.Id))">Delete
+                        </MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code
+{
+    private IReadOnlyList<CoilListDto> _coils = [];
+    private IReadOnlyList<ProductionOrderListDto> _orders = [];
+    private bool _loading, _editing;
+    private int? _editId;
+    private string _search = "", _number = "", _grade = "", _location = "";
+    private int _orderId;
+    private decimal _weight, _width, _thickness;
+    private IEnumerable<CoilListDto> Filtered =>_coils.Where(x =>string.IsNullOrWhiteSpace(_search)||$"{x.CoilNumber} {x.ProductionOrderNumber} {x.SteelGrade} {x.Status} {x.CurrentLocation}".Contains(_search, StringComparison.OrdinalIgnoreCase));
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+        _orders = await OrdersApi.GetListAsync();
+    }
+    private async Task Load()
+    {
+        _loading = true;
+        try
+        {
+            _coils = await Api.GetListAsync();
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+    private void New()
+    {
+        _editId = null;
+        _number = _grade = _location = "";
+        _orderId = 0;
+        _weight = _width = _thickness = 0;
+        _editing = true;
+    }
+    private void Edit(CoilListDto x)
+    {
+        _editId = x.Id;
+        _number = x.CoilNumber;
+        _orderId = x.ProductionOrderId;
+        _grade = x.SteelGrade;
+        _location = x.CurrentLocation??"";
+        _weight = x.Weight;
+        _width = x.Width;
+        _thickness = x.Thickness;
+        _editing = true;
+    }
+    private async Task Save()
+    {
+        try
+        {
+            if(_editId is null)
+                await Api.CreateAsync(new CreateCoilRequest
+                {
+                    CoilNumber = _number, ProductionOrderId = _orderId, SteelGrade = _grade, Weight = _weight, Width = _width, Thickness = _thickness, CurrentLocation = _location
+                });
+            else 
+                await Api.UpdateAsync(_editId.Value, new UpdateCoilRequest
+                {
+                    Weight = _weight, Width = _width, Thickness = _thickness, CurrentLocation = _location
+                });
+
+            _editing = false;
+            await Load();
+            Snackbar.Add("Coil saved.", Severity.Success);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+    private void Cancel() =>_editing = false;
+    private async Task Delete(int id)
+    {
+        try
+        {
+            await Api.DeleteAsync(id);
+            await Load();
+            Snackbar.Add("Coil deleted.", Severity.Success);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

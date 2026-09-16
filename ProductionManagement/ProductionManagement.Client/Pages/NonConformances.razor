@@ -1,0 +1,186 @@
+@page "/non-conformances"
+@using ProductionManagement.Client.Services
+@using ProductionManagement.Shared.DTOs
+@inject NonConformanceApiClient Api
+@inject CoilApiClient CoilsApi
+@inject ISnackbar Snackbar
+
+<PageTitle>
+    SteelOps - Non-Conformances
+</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Large" Class="pa-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">
+                Non-Conformances
+            </MudText>
+            <MudText Color="Color.Secondary">
+                Track quality problems and their disposition.
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="New">
+            New Issue
+        </MudButton>
+    </div>
+    @if(_editing)
+    {
+        <MudPaper Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6">
+                New Non-Conformance
+            </MudText>
+            <MudGrid Class="mt-1">
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="int" Label="Coil" @bind-Value="_coilId" Required="true">
+                        @foreach(var c in _coils)
+                        {
+                            <MudSelectItem Value="c.Id">
+                                @c.CoilNumber
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Type" @bind-Value="_type" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" Label="Severity" @bind-Value="_severity">
+                        <MudSelectItem Value="@("Low")">
+                            Low
+                        </MudSelectItem>
+                        <MudSelectItem Value="@("Medium")">
+                            Medium
+                        </MudSelectItem>
+                        <MudSelectItem Value="@("High")">
+                            High
+                        </MudSelectItem>
+                        <MudSelectItem Value="@("Critical")">
+                            Critical
+                        </MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Description" Lines="3" @bind-Value="_description" />
+                </MudItem>
+            </MudGrid>
+            <div class="mt-4">
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
+                    Save
+                </MudButton>
+                <MudButton Class="ml-2" OnClick="Cancel">
+                    Cancel
+                </MudButton>
+            </div>
+        </MudPaper>
+    }
+    <MudPaper Class="pa-4">
+        <MudTextField Label="Search" @bind-Value="_search" Clearable="true" Class="mb-3"/>
+        @if(_loading)
+        {
+            <MudProgressLinear Indeterminate="true"/>
+        }
+        else
+        {
+            <MudTable Items="Filtered" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>
+                        Number
+                    </MudTh>
+                    <MudTh>
+                        Coil
+                    </MudTh>
+                    <MudTh>
+                        Type
+                    </MudTh>
+                    <MudTh>
+                        Severity
+                    </MudTh>
+                    <MudTh>
+                        Status
+                    </MudTh>
+                    <MudTh>
+                        Created
+                    </MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        <MudLink Href="@($"/non-conformances/{context.Id}")">
+                            @context.NCNumber
+                        </MudLink>
+                    </MudTd>
+                    <MudTd>
+                        @context.CoilNumber
+                    </MudTd>
+                    <MudTd>
+                        @context.Type
+                    </MudTd>
+                    <MudTd>
+                        @context.Severity
+                    </MudTd>
+                    <MudTd>
+                        @context.Status
+                    </MudTd>
+                    <MudTd>
+                        @context.CreatedDate.ToLocalTime().ToString("d")
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code
+{
+    private IReadOnlyList<NonConformanceListDto> _items = [];
+    private IReadOnlyList<CoilListDto> _coils = [];
+    private bool _loading, _editing;
+    private string _search = "", _type = "", _description = "", _severity = "Medium";
+    private int _coilId;
+    private IEnumerable<NonConformanceListDto> Filtered =>_items.Where(x =>string.IsNullOrWhiteSpace(_search)||$"{x.NCNumber} {x.CoilNumber} {x.Type} {x.Description} {x.Severity} {x.Status}".Contains(_search, StringComparison.OrdinalIgnoreCase));
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+        _coils = await CoilsApi.GetListAsync();
+    }
+    private async Task Load()
+    {
+        _loading = true;
+        try
+        {
+            _items = await Api.GetListAsync();
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+    private void New()
+    {
+        _coilId = 0;
+        _type = _description = "";
+        _severity = "Medium";
+        _editing = true;
+    }
+    private async Task Save()
+    {
+        try
+        {
+            await Api.CreateAsync(new CreateNonConformanceRequest
+            {
+                CoilId = _coilId, Type = _type, Description = _description, Severity = _severity
+            }
+            );
+            _editing = false;
+            await Load();
+            Snackbar.Add("Issue saved.", Severity.Success);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+    private void Cancel() =>_editing = false;
+}

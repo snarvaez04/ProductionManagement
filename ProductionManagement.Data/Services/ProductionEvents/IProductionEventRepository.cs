@@ -4,13 +4,13 @@ namespace ProductionManagement.Data.Services
 {
     public interface IProductionEventRepository
     {
-        Task<IEnumerable<ProductionEventListDto>> GetListAsync();
+        Task<List<ProductionEventListDto>> GetListAsync();
 
         Task<ProductionEventDto?> GetByIdAsync(int id);
 
-        Task<IEnumerable<ProductionEventDto>> GetByCoilAsync(int coilId);
+        Task<List<ProductionEventDto>> GetByCoilAsync(int coilId);
 
-        Task<IEnumerable<ProductionEventDto>> GetByEquipmentAsync(int equipmentId);
+        Task<List<ProductionEventDto>> GetByEquipmentAsync(int equipmentId);
 
         Task<int> CreateAsync(CreateProductionEventRequest request);
     }

@@ -4,7 +4,7 @@ namespace ProductionManagement.Data.Services
 {
     public interface ICoilRepository
     {
-        Task<IEnumerable<CoilListDto>> GetListAsync();
+        Task<List<CoilListDto>> GetListAsync();
 
         Task<CoilDetailsDto?> GetByIdAsync(int id);
 

@@ -1,0 +1,112 @@
+@page "/equipment/{Id:int}"
+@using ProductionManagement.Client.Services
+@using ProductionManagement.Shared.DTOs
+@inject EquipmentApiClient Api
+@inject ProductionEventApiClient EventsApi
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pa-4">
+    <MudButton Href="/equipment" Class="mb-3">
+        Back to Equipment
+    </MudButton>
+    @if(_item is null)
+    {
+        <MudProgressLinear Indeterminate="true"/>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4">
+            @_item.EquipmentNumber
+        </MudText>
+        <MudText Color="Color.Secondary" Class="mb-4">
+            @_item.Name
+        </MudText>
+        <MudPaper Class="pa-4 mb-4">
+            <MudText>
+                Type: @_item.EquipmentType
+            </MudText>
+            <MudText>
+                Location: @_item.Location
+            </MudText>
+            <MudText>
+                Status: @_item.Status
+            </MudText>
+            <div class="mt-3 d-flex flex-wrap gap-2">
+                <MudButton OnClick="@(()=> Set(id => Api.SetOperationalAsync(_item.Id)))">Operational
+                </MudButton>
+                <MudButton OnClick="@(()=> Set(id => Api.SetMaintenanceAsync(_item.Id)))">Maintenance
+                </MudButton>
+                <MudButton OnClick="@(()=> Set(id => Api.SetDownAsync(_item.Id)))">Down
+                </MudButton>
+                <MudButton OnClick="@(() => Set(id => Api.SetOfflineAsync(_item.Id)))">
+                    Offline
+                </MudButton>
+            </div>
+        </MudPaper>
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6">
+                Recent Production Events
+            </MudText>
+            <MudTable Items="_events" Dense="true">
+                <HeaderContent>
+                    <MudTh>
+                        Date
+                    </MudTh>
+                    <MudTh>
+                        Coil
+                    </MudTh>
+                    <MudTh>
+                        Event
+                    </MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        @context.EventDate.ToLocalTime().ToString("g")
+                    </MudTd>
+                    <MudTd>
+                        @context.CoilNumber
+                    </MudTd>
+                    <MudTd>
+                        @context.EventType
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+        }
+    </MudContainer>
+
+@code
+{
+    [Parameter]public int Id
+    {
+        get;
+        set;
+    }
+    private EquipmentDetailsDto?_item;
+    private IReadOnlyList<ProductionEventDto>_events = [];
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            _item = await Api.GetByIdAsync(Id);
+            _events = (await EventsApi.GetByEquipmentAsync(Id)).ToList();
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+    private async Task Set(Func<int, Task> action)
+    {
+        try
+        {
+            await action(Id);
+            _item = await Api.GetByIdAsync(Id);
+            Snackbar.Add("Status updated.", Severity.Success);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

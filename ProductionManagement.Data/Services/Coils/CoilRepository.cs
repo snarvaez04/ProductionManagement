@@ -14,13 +14,13 @@ namespace ProductionManagement.Data.Services
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<IEnumerable<CoilListDto>> GetListAsync()
+        public async Task<List<CoilListDto>> GetListAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            return await connection.QueryAsync<CoilListDto>(
+            return (await connection.QueryAsync<CoilListDto>(
                 "dbo.usp_Coil_GetList",
-                commandType: CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure)).AsList();
         }
 
         public async Task<CoilDetailsDto?> GetByIdAsync(int id)

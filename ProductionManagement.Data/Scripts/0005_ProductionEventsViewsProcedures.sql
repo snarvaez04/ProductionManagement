@@ -186,7 +186,7 @@ BEGIN
     SET
         Status =
             CASE i.EventType
-                WHEN 'Processing Started'
+                WHEN 'Production Started'
                     THEN 'In Production'
 
                 WHEN 'Quality Hold'
@@ -205,7 +205,7 @@ BEGIN
         ON i.CoilId = c.Id
     WHERE i.EventType IN
     (
-        'Processing Started',
+        'Production Started',
         'Quality Hold',
         'Quality Released',
         'Production Completed'
