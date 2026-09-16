@@ -21,7 +21,7 @@ SELECT
         SUM
         (
             CASE
-                WHEN c.Status = 'Completed'
+                WHEN c.Status = 'Completed' OR c.Status = 'Released'
                 THEN c.Weight
                 ELSE 0
             END

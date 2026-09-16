@@ -4,7 +4,7 @@ SELECT
     COUNT
     (
         CASE
-            WHEN Status = 'Approved'
+            WHEN Status <> 'Draft' AND Status <> 'Completed'
             THEN 1
         END
     ) AS ActiveProductionOrders,

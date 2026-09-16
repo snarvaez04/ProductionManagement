@@ -32,13 +32,16 @@
                 Status: @_item.Status
             </MudText>
             <div class="mt-3 d-flex flex-wrap gap-2">
-                <MudButton OnClick="@(()=> Set(id => Api.SetOperationalAsync(_item.Id)))">Operational
+                <MudButton Color="Color.Success" Variant="Variant.Filled" OnClick="@(() => Set(id => Api.SetOperationalAsync(_item.Id)))">
+                    Operational
                 </MudButton>
-                <MudButton OnClick="@(()=> Set(id => Api.SetMaintenanceAsync(_item.Id)))">Maintenance
+                <MudButton Color="Color.Info" Variant="Variant.Filled" OnClick="@(() => Set(id => Api.SetMaintenanceAsync(_item.Id)))">
+                    Maintenance
                 </MudButton>
-                <MudButton OnClick="@(()=> Set(id => Api.SetDownAsync(_item.Id)))">Down
+                <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="@(() => Set(id => Api.SetDownAsync(_item.Id)))">
+                    Down
                 </MudButton>
-                <MudButton OnClick="@(() => Set(id => Api.SetOfflineAsync(_item.Id)))">
+                <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="@(() => Set(id => Api.SetOfflineAsync(_item.Id)))">
                     Offline
                 </MudButton>
             </div>
