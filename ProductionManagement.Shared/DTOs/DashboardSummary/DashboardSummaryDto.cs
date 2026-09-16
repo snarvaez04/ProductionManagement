@@ -20,9 +20,9 @@
 
         public int OpenNonConformances { get; init; }
 
-        public int CriticalNonConformances { get; init; }
+        public int ResolvedNonConformances { get; init; }
 
-        public int MajorNonConformances { get; init; }
+        public int ClosedNonConformances { get; init; }
 
         public int TotalEquipment { get; init; }
 

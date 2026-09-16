@@ -15,13 +15,13 @@ namespace ProductionManagement.Data.Services
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<IEnumerable<ProductionEventListDto>> GetListAsync()
+        public async Task<List<ProductionEventListDto>> GetListAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            return await connection.QueryAsync<ProductionEventListDto>(
+            return (await connection.QueryAsync<ProductionEventListDto>(
                 "dbo.usp_ProductionEvent_GetList",
-                commandType: CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure)).AsList();
         }
 
         public async Task<ProductionEventDto?> GetByIdAsync(int id)
@@ -37,36 +37,33 @@ namespace ProductionManagement.Data.Services
                 commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<IEnumerable<ProductionEventDto>> GetByCoilAsync(
-            int coilId)
+        public async Task<List<ProductionEventDto>> GetByCoilAsync(int coilId)
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            return await connection.QueryAsync<ProductionEventDto>(
+            return (await connection.QueryAsync<ProductionEventDto>(
                 "dbo.usp_ProductionEvent_GetByCoil",
                 new
                 {
                     CoilId = coilId
                 },
-                commandType: CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure)).AsList();
         }
 
-        public async Task<IEnumerable<ProductionEventDto>> GetByEquipmentAsync(
-            int equipmentId)
+        public async Task<List<ProductionEventDto>> GetByEquipmentAsync(int equipmentId)
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            return await connection.QueryAsync<ProductionEventDto>(
+            return (await connection.QueryAsync<ProductionEventDto>(
                 "dbo.usp_ProductionEvent_GetByEquipment",
                 new
                 {
                     EquipmentId = equipmentId
                 },
-                commandType: CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure)).AsList();
         }
 
-        public async Task<int> CreateAsync(
-            CreateProductionEventRequest request)
+        public async Task<int> CreateAsync(CreateProductionEventRequest request)
         {
             using var connection = _connectionFactory.CreateConnection();
 

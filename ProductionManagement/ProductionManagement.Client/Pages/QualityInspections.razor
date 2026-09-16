@@ -1,0 +1,194 @@
+@page "/quality-inspections"
+@using ProductionManagement.Client.Services
+@using ProductionManagement.Shared.DTOs
+@inject QualityInspectionApiClient Api
+@inject CoilApiClient CoilsApi
+@inject ISnackbar Snackbar
+
+<PageTitle>
+    SteelOps - Quality Inspections
+</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Large" Class="pa-4">
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudText Typo="Typo.h4">
+                Quality Inspections
+            </MudText>
+            <MudText Color="Color.Secondary">
+                Record and review coil inspections.
+            </MudText>
+        </div>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="New">
+            New Inspection
+        </MudButton>
+    </div>
+    @if(_editing)
+    {
+        <MudPaper Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6">
+                New Inspection
+            </MudText>
+            <MudGrid Class="mt-1">
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="int" Label="Coil" @bind-Value="_coilId" Required="true">
+                        @foreach(var c in _coils)
+                        {
+                            <MudSelectItem Value="c.Id">
+                                @c.CoilNumber
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Inspector" @bind-Value="_inspector" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" Label="Result" @bind-Value="_result">
+                        <MudSelectItem Value="@("Passed")">
+                            Passed
+                        </MudSelectItem>
+                        <MudSelectItem Value="@("Failed")">
+                            Failed
+                        </MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Surface Quality" @bind-Value="_surface" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="decimal?" Label="Width" @bind-Value="_width" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="decimal?" Label="Thickness" @bind-Value="_thickness" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField T="decimal?" Label="Weight" @bind-Value="_weight" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Notes" Lines="3" @bind-Value="_notes" />
+                </MudItem>
+            </MudGrid>
+            <div class="mt-4">
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
+                    Save
+                </MudButton>
+                <MudButton Class="ml-2" OnClick="Cancel">
+                    Cancel
+                </MudButton>
+            </div>
+        </MudPaper>
+    }
+    <MudPaper Class="pa-4">
+        <MudTextField Label="Search" @bind-Value="_search" Clearable="true" Class="mb-3"/>
+        @if(_loading)
+        {
+            <MudProgressLinear Indeterminate="true"/>
+        }
+        else
+        {
+            <MudTable Items="Filtered" Dense="true" Hover="true">
+                <HeaderContent>
+                    <MudTh>
+                        Date
+                    </MudTh>
+                    <MudTh>
+                        Coil
+                    </MudTh>
+                    <MudTh>
+                        Inspector
+                    </MudTh>
+                    <MudTh>
+                        Result
+                    </MudTh>
+                    <MudTh>
+                        Thickness
+                    </MudTh>
+                    <MudTh>
+                        Notes
+                    </MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        @context.InspectionDate.ToLocalTime().ToString("g")
+                    </MudTd>
+                    <MudTd>
+                        <MudLink Href="@($"/coils/{context.CoilId}")">
+                            @context.CoilNumber
+                        </MudLink>
+                    </MudTd>
+                    <MudTd>
+                        @context.InspectorName
+                    </MudTd>
+                    <MudTd>
+                        @context.Result
+                    </MudTd>
+                    <MudTd>
+                        @(context.ThicknessMeasured?.ToString("N3")??"-")
+                    </MudTd>
+                    <MudTd>
+                        @(context.Notes??"-")
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code
+{
+    private IReadOnlyList<QualityInspectionListDto> _items = [];
+    private IReadOnlyList<CoilListDto> _coils = [];
+    private bool _loading, _editing;
+    private string _search = "", _inspector = "", _result = "Passed", _surface = "", _notes = "";
+    private int _coilId;
+    private decimal? _width, _thickness, _weight;
+    private IEnumerable<QualityInspectionListDto> Filtered =>_items.Where(x =>string.IsNullOrWhiteSpace(_search)||$"{x.CoilNumber} {x.InspectorName} {x.Result} {x.Notes}".Contains(_search, StringComparison.OrdinalIgnoreCase));
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+        _coils = await CoilsApi.GetListAsync();
+    }
+    private async Task Load()
+    {
+        _loading = true;
+        try
+        {
+            _items = await Api.GetListAsync();
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+    private void New()
+    {
+        _coilId = 0;
+        _inspector = _surface = _notes = "";
+        _result = "Passed";
+        _width = _thickness = _weight = null;
+        _editing = true;
+    }
+    private async Task Save()
+    {
+        try
+        {
+            await Api.CreateAsync(new CreateQualityInspectionRequest
+            {
+                CoilId = _coilId, InspectorName = _inspector, Result = _result, SurfaceQuality = _surface, WidthMeasured = _width, ThicknessMeasured = _thickness, WeightMeasured = _weight, Notes = _notes
+            }
+            );
+            _editing = false;
+            await Load();
+            Snackbar.Add("Inspection saved.", Severity.Success);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+    private void Cancel() =>_editing = false;
+}

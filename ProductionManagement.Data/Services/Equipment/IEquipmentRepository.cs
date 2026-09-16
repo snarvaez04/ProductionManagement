@@ -4,7 +4,7 @@ namespace ProductionManagement.Data.Services
 {
     public interface IEquipmentRepository
     {
-        Task<IEnumerable<EquipmentListDto>> GetListAsync();
+        Task<List<EquipmentListDto>> GetListAsync();
 
         Task<EquipmentDetailsDto?> GetByIdAsync(int id);
 

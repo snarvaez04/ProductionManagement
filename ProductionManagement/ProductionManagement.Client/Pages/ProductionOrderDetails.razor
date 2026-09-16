@@ -1,0 +1,136 @@
+@page "/production-orders/{Id:int}"
+@using ProductionManagement.Client.Services
+@using ProductionManagement.Shared.DTOs
+@inject ProductionOrderApiClient Api
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>
+    SteelOps - Production Order
+</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pa-4">
+    <MudButton Href="/production-orders" Class="mb-3">
+        Back to Orders
+    </MudButton>
+    @if(_loading)
+    {
+        <MudProgressLinear Indeterminate="true"/>
+        }else if(_item is null){
+        <MudAlert Severity="Severity.Error">
+            Order not found.
+        </MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4">
+            @_item.OrderNumber
+        </MudText>
+        <MudText Color="Color.Secondary" Class="mb-4">
+            @_item.CustomerName - @_item.ProductCode
+        </MudText>
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6">
+                Order Details
+            </MudText>
+            <MudText>
+                Status: @_item.Status
+            </MudText>
+            <MudText>
+                Steel Grade: @_item.SteelGrade
+            </MudText>
+            <MudText>
+                Quantity: @_item.Quantity
+            </MudText>
+            <MudText>
+                Target Width: @_item.TargetWidth
+            </MudText>
+            <MudText>
+                Target Thickness: @_item.TargetThickness
+            </MudText>
+            <MudText>
+                Target Weight: @_item.TargetWeight
+            </MudText>
+            <MudText>
+                Due Date: @(_item.DueDate?.ToString("d")??"-")
+            </MudText>
+            <MudText>
+                Coils: @_item.CoilCount
+            </MudText>
+            <MudText>
+                Produced Weight: @_item.ProducedWeight.ToString("N1")
+            </MudText>
+            <MudText>
+                Released Coils: @_item.ReleasedCoilCount
+            </MudText>
+            <MudText>
+                Coils On Hold: @_item.OnHoldCoilCount
+            </MudText>
+        </MudPaper>
+        <div class="mt-4 d-flex flex-wrap gap-2">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Release">
+                Release
+            </MudButton>
+            <MudButton Color="Color.Secondary" OnClick="Start">
+                Start
+            </MudButton>
+            <MudButton Color="Color.Success" OnClick="Complete">
+                Complete
+            </MudButton>
+            <MudButton Href="/coils">
+                View Coils
+            </MudButton>
+        </div>
+    }
+    </MudContainer>
+
+@code
+{
+    [Parameter]public int Id
+    {
+        get;
+        set;
+    }
+    private ProductionOrderDetailsDto?_item;
+    private bool _loading = true;
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        try
+        {
+            _item = await Api.GetByIdAsync(Id);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+    private async Task Release()
+    {
+        await Action((id) => Api.ReleaseAsync(id), "Order released.");
+    }
+    private async Task Start()
+    {
+        await Action((id) => Api.StartAsync(id), "Production started.");
+    }
+    private async Task Complete()
+    {
+        await Action((id) => Api.CompleteAsync(id), "Order completed.");
+    }
+    private async Task Action(Func<int, Task> action, string message)
+    {
+        try
+        {
+            await action(Id);
+            _item = await Api.GetByIdAsync(Id);
+            Snackbar.Add(message, Severity.Success);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

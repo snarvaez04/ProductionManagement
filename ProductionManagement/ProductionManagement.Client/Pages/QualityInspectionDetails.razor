@@ -1,0 +1,71 @@
+@page "/quality-inspections/{Id:int}"
+@using ProductionManagement.Client.Services
+@using ProductionManagement.Shared.DTOs
+@inject QualityInspectionApiClient Api
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pa-4">
+    <MudButton Href="/quality-inspections" Class="mb-3">
+        Back
+    </MudButton>
+    @if(_item is null)
+    {
+        <MudProgressLinear Indeterminate="true"/>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4">
+            Inspection #@_item.Id
+        </MudText>
+        <MudPaper Class="pa-4 mt-4">
+            <MudText>
+                Coil: @_item.CoilNumber
+            </MudText>
+            <MudText>
+                Date: @_item.InspectionDate.ToLocalTime().ToString("g")
+            </MudText>
+            <MudText>
+                Inspector: @_item.InspectorName
+            </MudText>
+            <MudText>
+                Result: @_item.Result
+            </MudText>
+            <MudText>
+                Surface: @(_item.SurfaceQuality??"-")
+            </MudText>
+            <MudText>
+                Width: @(_item.WidthMeasured?.ToString()??"-")
+            </MudText>
+            <MudText>
+                Thickness: @(_item.ThicknessMeasured?.ToString()??"-")
+            </MudText>
+            <MudText>
+                Weight: @(_item.WeightMeasured?.ToString()??"-")
+            </MudText>
+            <MudText>
+                Notes: @(_item.Notes??"-")
+            </MudText>
+        </MudPaper>
+        }}
+    </MudContainer>
+
+@code
+{
+    [Parameter]public int Id
+    {
+        get;
+        set;
+    }
+    private QualityInspectionDetailsDto?_item;
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            _item = await Api.GetByIdAsync(Id);
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+}

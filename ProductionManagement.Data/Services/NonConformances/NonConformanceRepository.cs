@@ -15,13 +15,13 @@ namespace ProductionManagement.Data.Services
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<IEnumerable<NonConformanceListDto>> GetListAsync()
+        public async Task<List<NonConformanceListDto>> GetListAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            return await connection.QueryAsync<NonConformanceListDto>(
+            return (await connection.QueryAsync<NonConformanceListDto>(
                 "dbo.usp_NonConformance_GetList",
-                commandType: CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure)).AsList();
         }
 
         public async Task<NonConformanceDetailsDto?> GetByIdAsync(int id)
@@ -38,17 +38,17 @@ namespace ProductionManagement.Data.Services
                     commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<IEnumerable<NonConformanceListDto>>GetByCoilAsync(int coilId)
+        public async Task<List<NonConformanceListDto>>GetByCoilAsync(int coilId)
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            return await connection.QueryAsync<NonConformanceListDto>(
+            return (await connection.QueryAsync<NonConformanceListDto>(
                 "dbo.usp_NonConformance_GetByCoil",
                 new
                 {
                     CoilId = coilId
                 },
-                commandType: CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure)).AsList();
         }
 
         public async Task<int> CreateAsync(CreateNonConformanceRequest request)

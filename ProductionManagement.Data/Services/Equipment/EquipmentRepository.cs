@@ -15,13 +15,13 @@ namespace ProductionManagement.Data.Services
             _connectionFactory = connectionFactory;
         }
 
-        public async Task<IEnumerable<EquipmentListDto>> GetListAsync()
+        public async Task<List<EquipmentListDto>> GetListAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            return await connection.QueryAsync<EquipmentListDto>(
+            return (await connection.QueryAsync<EquipmentListDto>(
                 "dbo.usp_Equipment_GetList",
-                commandType: CommandType.StoredProcedure);
+                commandType: CommandType.StoredProcedure)).AsList();
         }
 
         public async Task<EquipmentDetailsDto?> GetByIdAsync(int id)
@@ -37,8 +37,7 @@ namespace ProductionManagement.Data.Services
                 commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<int> CreateAsync(
-            CreateEquipmentRequest request)
+        public async Task<int> CreateAsync(CreateEquipmentRequest request)
         {
             using var connection = _connectionFactory.CreateConnection();
 

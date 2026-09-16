@@ -1,0 +1,216 @@
+@page "/coils/{Id:int}"
+@using ProductionManagement.Client.Services
+@using ProductionManagement.Shared.DTOs
+@inject CoilApiClient Api
+@inject QualityInspectionApiClient QualityApi
+@inject NonConformanceApiClient NCApi
+@inject ProductionEventApiClient EventsApi
+@inject ISnackbar Snackbar
+
+<PageTitle>
+    SteelOps - Coil
+</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="pa-4">
+    <MudButton Href="/coils" Class="mb-3">
+        Back to Coils
+    </MudButton>
+    @if(_loading)
+    {
+        <MudProgressLinear Indeterminate="true"/>
+        }else if(_coil is null){
+        <MudAlert Severity="Severity.Error">
+            Coil not found.
+        </MudAlert>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4">
+            @_coil.CoilNumber
+        </MudText>
+        <MudText Color="Color.Secondary" Class="mb-4">
+            @_coil.ProductionOrderNumber - @_coil.Status
+        </MudText>
+        <MudPaper Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6">
+                Coil Details
+            </MudText>
+            <MudText>
+                Customer: @_coil.CustomerName
+            </MudText>
+            <MudText>
+                Product: @_coil.ProductCode
+            </MudText>
+            <MudText>
+                Grade: @_coil.SteelGrade
+            </MudText>
+            <MudText>
+                Weight: @_coil.Weight tons
+            </MudText>
+            <MudText>
+                Width: @_coil.Width
+            </MudText>
+            <MudText>
+                Thickness: @_coil.Thickness
+            </MudText>
+            <MudText>
+                Location: @(_coil.CurrentLocation??"-")
+            </MudText>
+        </MudPaper>
+        <MudPaper Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6">
+                Inspections
+            </MudText>
+            @if(_inspections.Count==0)
+            {
+                <MudText>
+                    No inspections.
+                </MudText>
+            }
+            else
+            {
+                <MudTable Items="_inspections" Dense="true">
+                    <HeaderContent>
+                        <MudTh>
+                            Date
+                        </MudTh>
+                        <MudTh>
+                            Inspector
+                        </MudTh>
+                        <MudTh>
+                            Result
+                        </MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            @context.InspectionDate.ToLocalTime().ToString("g")
+                        </MudTd>
+                        <MudTd>
+                            @context.InspectorName
+                        </MudTd>
+                        <MudTd>
+                            @context.Result
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+        <MudPaper Class="pa-4 mb-4">
+            <MudText Typo="Typo.h6">
+                Non-Conformances
+            </MudText>
+            @if(_ncs.Count==0)
+            {
+                <MudText>
+                    No non-conformances.
+                </MudText>
+            }
+            else
+            {
+                <MudTable Items="_ncs" Dense="true">
+                    <HeaderContent>
+                        <MudTh>
+                            Number
+                        </MudTh>
+                        <MudTh>
+                            Type
+                        </MudTh>
+                        <MudTh>
+                            Severity
+                        </MudTh>
+                        <MudTh>
+                            Status
+                        </MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            @context.NCNumber
+                        </MudTd>
+                        <MudTd>
+                            @context.Type
+                        </MudTd>
+                        <MudTd>
+                            @context.Severity
+                        </MudTd>
+                        <MudTd>
+                            @context.Status
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h6">
+                Production Events
+            </MudText>
+            @if(_events.Count==0)
+            {
+                <MudText>
+                    No production events.
+                </MudText>
+            }
+            else
+            {
+                <MudTable Items="_events" Dense="true">
+                    <HeaderContent>
+                        <MudTh>
+                            Date
+                        </MudTh>
+                        <MudTh>
+                            Event
+                        </MudTh>
+                        <MudTh>
+                            Equipment
+                        </MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            @context.EventDate.ToLocalTime().ToString("g")
+                        </MudTd>
+                        <MudTd>
+                            @context.EventType
+                        </MudTd>
+                        <MudTd>
+                            @(context.EquipmentNumber??"-")
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
+        }
+    </MudContainer>
+
+@code
+{
+    [Parameter]public int Id
+    {
+        get;
+        set;
+    }
+    private CoilDetailsDto?_coil;
+    private IReadOnlyList<QualityInspectionDetailsDto>_inspections = [];
+    private IReadOnlyList<NonConformanceListDto>_ncs = [];
+    private IReadOnlyList<ProductionEventDto>_events = [];
+    private bool _loading = true;
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        try
+        {
+            _coil = await Api.GetByIdAsync(Id);
+            if(_coil is not null)
+            {
+                _inspections = await QualityApi.GetByCoilAsync(Id);
+                _ncs = await NCApi.GetByCoilAsync(Id);
+                _events = (await EventsApi.GetByCoilAsync(Id)).ToList();
+            }
+        }
+        catch(Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}
