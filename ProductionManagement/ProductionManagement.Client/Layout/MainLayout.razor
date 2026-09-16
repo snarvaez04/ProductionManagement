@@ -1,7 +1,8 @@
 ﻿@using MudBlazor
 @inherits LayoutComponentBase
 
-<MudThemeProvider />
+@* <MudThemeProvider /> *@
+<MudThemeProvider @bind-IsDarkMode="@_isDarkMode" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -11,6 +12,7 @@
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" OnClick="ToggleDrawer" />
         <MudText Typo="Typo.h6">SteelOps</MudText>
         <MudSpacer />
+        <MudSwitch @bind-Value="_isDarkMode" Color="Color.Primary" Label="Toggle Dark Mode" />
         <MudText Typo="Typo.body2"></MudText>
     </MudAppBar>
     <MudDrawer @bind-Open="_open" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md" Elevation="1">
@@ -21,4 +23,9 @@
     </MudMainContent>
 </MudLayout>
 
-@code { private bool _open = true; private void ToggleDrawer() => _open = !_open; }
+@code 
+{
+    private bool _isDarkMode = true;
+    private bool _open = true; 
+    private void ToggleDrawer() => _open = !_open; 
+}
