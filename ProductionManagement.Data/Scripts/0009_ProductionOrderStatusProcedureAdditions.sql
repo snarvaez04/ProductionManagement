@@ -31,7 +31,7 @@ BEGIN
 
     UPDATE dbo.ProductionOrders
     SET
-        Status = 'InProduction'
+        Status = 'In Production'
     WHERE Id = @Id
       AND Status = 'Approved';
 
@@ -55,12 +55,12 @@ BEGIN
     SET
         Status = 'Completed'
     WHERE Id = @Id
-      AND Status = 'InProduction';
+      AND Status = 'In Production';
 
     IF @@ROWCOUNT = 0
     BEGIN
         ;THROW 50005,
-            'Production order cannot be completed because it does not exist or is not InProduction.',
+            'Production order cannot be completed because it does not exist or is not In Production.',
             1;
     END;
 END;
