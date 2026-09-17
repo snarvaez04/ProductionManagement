@@ -72,6 +72,7 @@
     }
     private NonConformanceDetailsDto?_item;
     private string _status = "Open", _disposition = "";
+
     protected override async Task OnParametersSetAsync()
     {
         try
@@ -88,6 +89,7 @@
             Snackbar.Add(ex.Message, Severity.Error);
         }
     }
+    
     private async Task Save()
     {
         try

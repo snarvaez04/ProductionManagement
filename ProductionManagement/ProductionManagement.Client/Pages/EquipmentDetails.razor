@@ -87,6 +87,7 @@
     }
     private EquipmentDetailsDto?_item;
     private IReadOnlyList<ProductionEventDto>_events = [];
+
     protected override async Task OnParametersSetAsync()
     {
         try
@@ -99,6 +100,7 @@
             Snackbar.Add(ex.Message, Severity.Error);
         }
     }
+
     private async Task Set(Func<int, Task> action)
     {
         try

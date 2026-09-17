@@ -191,6 +191,7 @@
     private IReadOnlyList<NonConformanceListDto>_ncs = [];
     private IReadOnlyList<ProductionEventDto>_events = [];
     private bool _loading = true;
+
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;

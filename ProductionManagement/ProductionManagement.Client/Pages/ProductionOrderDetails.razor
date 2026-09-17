@@ -94,6 +94,7 @@
     }
     private ProductionOrderDetailsDto?_item;
     private bool _loading = true;
+
     protected override async Task OnParametersSetAsync()
     {
         _loading = true;
@@ -110,18 +111,22 @@
             _loading = false;
         }
     }
+    
     private async Task Approve()
     {
         await Action((id) => Api.ReleaseAsync(id), "Order approved.");
     }
+    
     private async Task Start()
     {
         await Action((id) => Api.StartAsync(id), "Production started.");
     }
+    
     private async Task Complete()
     {
         await Action((id) => Api.CompleteAsync(id), "Order completed.");
     }
+    
     private async Task Action(Func<int, Task> action, string message)
     {
         try
