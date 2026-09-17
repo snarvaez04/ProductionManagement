@@ -43,7 +43,7 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" sm="6">
-                        <MudSelect T="int?" Label="Equipment" @bind-Value="_equipmentId" Clearable="false" Required="true" Immediate="true" Validation="(int num) => FormValidators.ValidateSelect(num)">
+                        <MudSelect T="int?" Label="Equipment" @bind-Value="_equipmentId" Clearable="true" Immediate="true">
                             @foreach(var e in _equipment)
                             {
                                 <MudSelectItem Value="((int?)e.Id)">
