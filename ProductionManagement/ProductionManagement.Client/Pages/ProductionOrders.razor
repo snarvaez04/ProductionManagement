@@ -1,6 +1,7 @@
 @page "/production-orders"
 @using ProductionManagement.Client.Services
 @using ProductionManagement.Shared.DTOs
+@using ProductionManagement.Client.Validators
 @inject ProductionOrderApiClient Api
 @inject ISnackbar Snackbar
 
@@ -27,46 +28,48 @@
             <MudText Typo="Typo.h6">
                 @(_editId.HasValue ? "Edit Order" : "New Order")
             </MudText>
-            <MudGrid Class="mt-1">
-                @if (!_editId.HasValue)
-                {
+            <MudForm @ref="_form" ValidationDelay="0">
+                <MudGrid Class="mt-1">
+                    @if (!_editId.HasValue)
+                    {
+                        <MudItem xs="12" sm="6">
+                            <MudTextField Label="Order Number" @bind-Value="_orderNumber" Required="true" Immediate="true"/>
+                        </MudItem>
+                    }
                     <MudItem xs="12" sm="6">
-                        <MudTextField Label="Order Number" @bind-Value="_orderNumber" Required="true" />
+                        <MudTextField Label="Customer" @bind-Value="_customer" Required="true" Immediate="true" DebounceInterval="500" />
                     </MudItem>
-                }
-                <MudItem xs="12" sm="6">
-                    <MudTextField Label="Customer" @bind-Value="_customer" Required="true" />
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudTextField Label="Product" @bind-Value="_product" Required="true" />
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudTextField Label="Steel Grade" @bind-Value="_grade" Required="true" />
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudNumericField T="decimal" Label="Target Width" @bind-Value="_width" />
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudNumericField T="decimal" Label="Target Thickness" @bind-Value="_thickness" />
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudNumericField T="decimal" Label="Target Weight" @bind-Value="_weight" />
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudNumericField T="int" Label="Quantity" @bind-Value="_quantity" />
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudDatePicker Label="Due Date" @bind-Date="_dueDate" />
-                </MudItem>
-            </MudGrid>
-            <div class="mt-4">
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
-                    Save
-                </MudButton>
-                <MudButton Class="ml-2" OnClick="CancelEdit">
-                    Cancel
-                </MudButton>
-            </div>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Product" @bind-Value="_product" Required="true" Immediate="true" DebounceInterval="500"/>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Steel Grade" @bind-Value="_grade" Required="true" Immediate="true" DebounceInterval="500"/>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudNumericField T="decimal" Label="Target Width" @bind-Value="_width" Required="true" Immediate="true" Validation="(decimal num) => FormValidators.ValidateNumber(num)"/>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudNumericField T="decimal" Label="Target Thickness" @bind-Value="_thickness" Required="true" Immediate="true" Validation="(decimal num) => FormValidators.ValidateNumber(num)"/>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudNumericField T="decimal" Label="Target Weight" @bind-Value="_weight" Required="true" Immediate="true" Validation="(decimal num) => FormValidators.ValidateNumber(num)"/>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField T="int" Label="Quantity" @bind-Value="_quantity" Required="true" Immediate="true" Validation="(int num) => FormValidators.ValidateNumber(num)"/>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudDatePicker Label="Due Date" @bind-Date="_dueDate" Required="true" Immediate="true" Validation="(DateTime? date) => FormValidators.ValidateDate(date)"/>
+                    </MudItem>
+                </MudGrid>
+                <div class="mt-4">
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
+                        Save
+                    </MudButton>
+                    <MudButton Class="ml-2" OnClick="CancelEdit">
+                        Cancel
+                    </MudButton>
+                </div>
+            </MudForm>
         </MudPaper>
     }
     <MudPaper Class="pa-4">
@@ -133,7 +136,7 @@
 </MudContainer>
 
 @code
-{
+    {
     private IReadOnlyList<ProductionOrderListDto> _orders = [];
     private string _search = string.Empty;
     private bool _loading;
@@ -145,6 +148,8 @@
     private DateTime? _dueDate;
     private IEnumerable<ProductionOrderListDto> Filtered => _orders.Where(x => string.IsNullOrWhiteSpace(_search) || $"{x.OrderNumber} {x.CustomerName} {x.ProductCode} {x.SteelGrade} {x.Status}".Contains(_search, StringComparison.OrdinalIgnoreCase));
     protected override Task OnInitializedAsync() => Load();
+    private MudForm _form;
+
     private async Task Load()
     {
         _loading = true;
@@ -161,6 +166,7 @@
             _loading = false;
         }
     }
+
     private void NewOrder()
     {
         _editId = null;
@@ -170,6 +176,7 @@
         _dueDate = null;
         _editing = true;
     }
+
     private void Edit(ProductionOrderListDto x)
     {
         _editId = x.Id;
@@ -184,20 +191,27 @@
         _dueDate = x.DueDate;
         _editing = true;
     }
+
     private async Task Save()
     {
         try
         {
-            if (_editId is null) await Api.CreateAsync(new CreateProductionOrderRequest
-            {
+            await _form.Validate();
+
+            if(!_form.IsValid)
+                return;
+
+            if (_editId is null) 
+                await Api.CreateAsync(new CreateProductionOrderRequest
+                {
                 OrderNumber = _orderNumber, CustomerName = _customer, ProductCode = _product, SteelGrade = _grade, TargetWidth = _width, TargetThickness = _thickness, TargetWeight = _weight, Quantity = _quantity, DueDate = _dueDate
-            }
-            );
-            else await Api.UpdateAsync(_editId.Value, new UpdateProductionOrderRequest
-            {
-                CustomerName = _customer, ProductCode = _product, SteelGrade = _grade, TargetWidth = _width, TargetThickness = _thickness, TargetWeight = _weight, Quantity = _quantity, DueDate = _dueDate
-            }
-            );
+                });
+            else 
+                await Api.UpdateAsync(_editId.Value, new UpdateProductionOrderRequest
+                {
+                    CustomerName = _customer, ProductCode = _product, SteelGrade = _grade, TargetWidth = _width, TargetThickness = _thickness, TargetWeight = _weight, Quantity = _quantity, DueDate = _dueDate
+                });
+
             _editing = false;
             await Load();
             Snackbar.Add("Order saved.", Severity.Success);
@@ -207,7 +221,9 @@
             Snackbar.Add(ex.Message, Severity.Error);
         }
     }
+
     private void CancelEdit() => _editing = false;
+
     private async Task Delete(int id)
     {
         try

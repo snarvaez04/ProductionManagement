@@ -1,6 +1,7 @@
 @page "/equipment"
 @using ProductionManagement.Client.Services
 @using ProductionManagement.Shared.DTOs
+@using ProductionManagement.Client.Validators
 @inject EquipmentApiClient Api
 @inject ISnackbar Snackbar
 
@@ -27,31 +28,33 @@
             <MudText Typo="Typo.h6">
                 @(_editId.HasValue?"Edit Equipment":"New Equipment")
             </MudText>
-            <MudGrid Class="mt-1">
-                @if(!_editId.HasValue)
-                {
+            <MudForm @ref="_form" ValidationDelay="0">
+                <MudGrid Class="mt-1">
+                    @if(!_editId.HasValue)
+                    {
+                        <MudItem xs="12" sm="6">
+                            <MudTextField Label="Equipment Number" @bind-Value="_number" Required="true" Immediate="true"/>
+                        </MudItem>
+                    }
                     <MudItem xs="12" sm="6">
-                        <MudTextField Label="Equipment Number" @bind-Value="_number" />
+                        <MudTextField Label="Name" @bind-Value="_name" Required="true" Immediate="true"/>
                     </MudItem>
-                }
-                <MudItem xs="12" sm="6">
-                    <MudTextField Label="Name" @bind-Value="_name" />
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudTextField Label="Type" @bind-Value="_type" />
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudTextField Label="Location" @bind-Value="_location" />
-                </MudItem>
-            </MudGrid>
-            <div class="mt-4">
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
-                    Save
-                </MudButton>
-                <MudButton Class="ml-2" OnClick="Cancel">
-                    Cancel
-                </MudButton>
-            </div>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Type" @bind-Value="_type" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Location" @bind-Value="_location" />
+                    </MudItem>
+                </MudGrid>
+                <div class="mt-4">
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
+                        Save
+                    </MudButton>
+                    <MudButton Class="ml-2" OnClick="Cancel">
+                        Cancel
+                    </MudButton>
+                </div>
+            </MudForm>
         </MudPaper>
     }
     <MudPaper Class="pa-4">
@@ -117,7 +120,10 @@
     private int? _editId;
     private string _search = "", _number = "", _name = "", _type = "", _location = "";
     private IEnumerable<EquipmentListDto> Filtered =>_items.Where(x =>string.IsNullOrWhiteSpace(_search)||$"{x.EquipmentNumber} {x.Name} {x.EquipmentType} {x.Location} {x.Status}".Contains(_search, StringComparison.OrdinalIgnoreCase));
+    private MudForm _form;
+
     protected override Task OnInitializedAsync() =>Load();
+
     private async Task Load()
     {
         _loading = true;
@@ -134,12 +140,14 @@
             _loading = false;
         }
     }
+
     private void New()
     {
         _editId = null;
         _number = _name = _type = _location = "";
         _editing = true;
     }
+
     private void Edit(EquipmentListDto x)
     {
         _editId = x.Id;
@@ -149,10 +157,16 @@
         _location = x.Location;
         _editing = true;
     }
+
     private async Task Save()
     {
         try
         {
+            await _form.Validate();
+
+            if(!_form.IsValid)
+                return;
+
             if(_editId is null)await Api.CreateAsync(new CreateEquipmentRequest
             {
                 EquipmentNumber = _number, Name = _name, EquipmentType = _type, Location = _location
@@ -172,5 +186,6 @@
             Snackbar.Add(ex.Message, Severity.Error);
         }
     }
+
     private void Cancel() =>_editing = false;
 }

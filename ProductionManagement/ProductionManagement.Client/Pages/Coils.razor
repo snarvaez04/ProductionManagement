@@ -1,6 +1,7 @@
 @page "/coils"
 @using ProductionManagement.Client.Services
 @using ProductionManagement.Shared.DTOs
+@using ProductionManagement.Client.Validators
 @inject CoilApiClient Api
 @inject ProductionOrderApiClient OrdersApi
 @inject ISnackbar Snackbar
@@ -28,44 +29,46 @@
             <MudText Typo="Typo.h6">
                 @(_editId.HasValue ? "Edit Coil" : "New Coil")
             </MudText>
-            <MudGrid Class="mt-1">
-                <MudItem xs="12" sm="6">
-                    <MudTextField Label="Coil Number" @bind-Value="_number" Disabled="_editId.HasValue" Required="true" />
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudSelect T="int" Label="Production Order" @bind-Value="_orderId" Disabled="_editId.HasValue" Required="true">
-                        @foreach(var o in _orders)
-                        {
-                            <MudSelectItem Value="o.Id">
-                                @o.OrderNumber
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudTextField Label="Steel Grade" @bind-Value="_grade" Disabled="_editId.HasValue" />
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudTextField Label="Location" @bind-Value="_location" />
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudNumericField T="decimal" Label="Weight" @bind-Value="_weight" />
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudNumericField T="decimal" Label="Width" @bind-Value="_width" />
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudNumericField T="decimal" Label="Thickness" @bind-Value="_thickness" />
-                </MudItem>
-            </MudGrid>
-            <div class="mt-4">
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
-                    Save
-                </MudButton>
-                <MudButton Class="ml-2" OnClick="Cancel">
-                    Cancel
-                </MudButton>
-            </div>
+            <MudForm @ref="_form" ValidationDelay="0">
+                <MudGrid Class="mt-1">
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Coil Number" @bind-Value="_number" Disabled="_editId.HasValue" Required="true" Immediate="true"/>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="int" Label="Production Order" @bind-Value="_orderId" Disabled="_editId.HasValue" Required="true" Immediate="true" Validation="(int num) => FormValidators.ValidateSelect(num)">
+                            @foreach(var o in _orders)
+                            {
+                                <MudSelectItem Value="o.Id">
+                                    @o.OrderNumber
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Steel Grade" @bind-Value="_grade" Disabled="_editId.HasValue" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Location" @bind-Value="_location" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudNumericField T="decimal" Label="Weight" @bind-Value="_weight" Required="true" Immediate="true" Validation="(decimal num) => FormValidators.ValidateNumber(num)"/>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudNumericField T="decimal" Label="Width" @bind-Value="_width" Required="true" Immediate="true" Validation="(decimal num) => FormValidators.ValidateNumber(num)"/>
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudNumericField T="decimal" Label="Thickness" @bind-Value="_thickness" Required="true" Immediate="true" Validation="(decimal num) => FormValidators.ValidateNumber(num)"/>
+                    </MudItem>
+                </MudGrid>
+                <div class="mt-4">
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save">
+                        Save
+                    </MudButton>
+                    <MudButton Class="ml-2" OnClick="Cancel">
+                        Cancel
+                    </MudButton>
+                </div>
+            </MudForm>
         </MudPaper>
     }
     <MudPaper Class="pa-4">
@@ -142,11 +145,14 @@
     private int _orderId;
     private decimal _weight, _width, _thickness;
     private IEnumerable<CoilListDto> Filtered =>_coils.Where(x =>string.IsNullOrWhiteSpace(_search)||$"{x.CoilNumber} {x.ProductionOrderNumber} {x.SteelGrade} {x.Status} {x.CurrentLocation}".Contains(_search, StringComparison.OrdinalIgnoreCase));
+    private MudForm _form;
+
     protected override async Task OnInitializedAsync()
     {
         await Load();
         _orders = await OrdersApi.GetListAsync();
     }
+
     private async Task Load()
     {
         _loading = true;
@@ -163,6 +169,7 @@
             _loading = false;
         }
     }
+
     private void New()
     {
         _editId = null;
@@ -171,6 +178,7 @@
         _weight = _width = _thickness = 0;
         _editing = true;
     }
+
     private void Edit(CoilListDto x)
     {
         _editId = x.Id;
@@ -183,10 +191,16 @@
         _thickness = x.Thickness;
         _editing = true;
     }
+
     private async Task Save()
     {
         try
         {
+            await _form.Validate();
+
+            if(!_form.IsValid)
+                return;
+
             if(_editId is null)
                 await Api.CreateAsync(new CreateCoilRequest
                 {
@@ -207,7 +221,9 @@
             Snackbar.Add(ex.Message, Severity.Error);
         }
     }
+
     private void Cancel() =>_editing = false;
+    
     private async Task Delete(int id)
     {
         try
