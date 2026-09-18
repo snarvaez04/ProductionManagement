@@ -1,8 +1,11 @@
 @page "/production-orders"
 @using ProductionManagement.Client.Services
-@using ProductionManagement.Shared.DTOs
 @using ProductionManagement.Client.Validators
-@inject ProductionOrderApiClient Api
+@using ProductionManagement.Shared.DTOs
+@inject ProductionOrderApiClient productionOrderApi
+@inject CoilApiClient coilApi
+@inject ProductionEventApiClient productionEventApi
+@inject QualityInspectionApiClient qualityInspectionAPi
 @inject ISnackbar Snackbar
 
 <PageTitle>
@@ -155,7 +158,7 @@
         _loading = true;
         try
         {
-            _orders = await Api.GetListAsync();
+            _orders = await productionOrderApi.GetListAsync();
         }
         catch (Exception ex)
         {
@@ -196,18 +199,38 @@
     {
         try
         {
-            await _form.Validate();
+            await _form.ValidateAsync();
 
             if(!_form.IsValid)
                 return;
 
             if (_editId is null) 
-                await Api.CreateAsync(new CreateProductionOrderRequest
+            {
+                var productionOrder = new CreateProductionOrderRequest
                 {
-                OrderNumber = _orderNumber, CustomerName = _customer, ProductCode = _product, SteelGrade = _grade, TargetWidth = _width, TargetThickness = _thickness, TargetWeight = _weight, Quantity = _quantity, DueDate = _dueDate
-                });
+                    OrderNumber = _orderNumber,
+                    CustomerName = _customer,
+                    ProductCode = _product,
+                    SteelGrade = _grade,
+                    TargetWidth = _width,
+                    TargetThickness = _thickness,
+                    TargetWeight = _weight,
+                    Quantity = _quantity,
+                    DueDate = _dueDate
+                };
+
+                productionOrder.Id = await productionOrderApi.CreateAsync(productionOrder);
+
+                var coilsList = await CreateCoils(productionOrder);
+
+                var modifiedCoils = await ModifyCoils(coilsList, productionOrder);
+
+                var coilInspectionResults = InspectCoils(modifiedCoils, productionOrder);
+
+                await ReleaseOrHoldCoils(coilInspectionResults);
+            }
             else 
-                await Api.UpdateAsync(_editId.Value, new UpdateProductionOrderRequest
+                await productionOrderApi.UpdateAsync(_editId.Value, new UpdateProductionOrderRequest
                 {
                     CustomerName = _customer, ProductCode = _product, SteelGrade = _grade, TargetWidth = _width, TargetThickness = _thickness, TargetWeight = _weight, Quantity = _quantity, DueDate = _dueDate
                 });
@@ -228,13 +251,130 @@
     {
         try
         {
-            await Api.DeleteAsync(id);
+            await productionOrderApi.DeleteAsync(id);
             await Load();
             Snackbar.Add("Order deleted.", Severity.Success);
         }
         catch(Exception ex)
         {
             Snackbar.Add(ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task<List<CreateCoilRequest>> CreateCoils(CreateProductionOrderRequest productionOrder)
+    {
+        var createdCoils = new List<CreateCoilRequest>();
+
+        for (int i = 0; i < productionOrder.Quantity; i++)
+        {
+            var coil = new CreateCoilRequest();
+            coil.CoilNumber = $"Coil{i}-{productionOrder.Id}";
+            coil.ProductionOrderId = productionOrder.Id;
+            coil.SteelGrade = productionOrder.SteelGrade;
+            coil.Thickness = productionOrder.TargetThickness;
+            coil.Weight = productionOrder.TargetWeight;
+            coil.Width = productionOrder.TargetWidth;
+            coil.CurrentLocation = "";
+
+            coil.Id =  await coilApi.CreateAsync(coil);
+            createdCoils.Add(coil);
+        }
+
+        return createdCoils;
+    }
+
+    private async Task<List<CreateCoilRequest>> ModifyCoils(List<CreateCoilRequest> coilsList, CreateProductionOrderRequest productionOrder)
+    {
+        var coilToModify = coilsList.FirstOrDefault();
+        var modificationPercentage = .15m;
+
+        if (coilToModify != null)
+        {
+            coilToModify.Width += coilToModify.Width * modificationPercentage;
+
+            var coilUpdateRequest = new UpdateCoilRequest() { Width = coilToModify.Width, Weight = coilToModify.Weight, Thickness = coilToModify.Thickness, CurrentLocation = "Mill"};
+            await coilApi.UpdateAsync(coilToModify.Id, coilUpdateRequest);
+        }
+
+        return coilsList;
+    }
+
+    private List<CoilInspectionResults> InspectCoils(List<CreateCoilRequest> coilsList, CreateProductionOrderRequest productionOrder)
+    {
+        var inspectionResults = new List<CoilInspectionResults>();
+
+        foreach (var coil in coilsList)
+        {
+            var threshold = .10m;
+            var upperBoundWidthVariance = productionOrder.TargetWidth + (productionOrder.TargetWidth * threshold);
+            var lowerBoundWidthVariance = productionOrder.TargetWidth - (productionOrder.TargetWidth * threshold);
+
+            var upperBoundThicknessVariance = productionOrder.TargetThickness + (productionOrder.TargetThickness * threshold);
+            var lowerBoundThicknessVariance = productionOrder.TargetThickness - (productionOrder.TargetThickness * threshold);
+
+            var upperBoundWeightVariance = productionOrder.TargetWeight + (productionOrder.TargetWeight * threshold);
+            var lowerBoundWeightVariance = productionOrder.TargetWeight - (productionOrder.TargetWeight * threshold);
+
+            var widthFailed = coil.Width > upperBoundWidthVariance || coil.Width < lowerBoundWidthVariance;
+            var thicknessFaild = coil.Thickness > upperBoundThicknessVariance || coil.Thickness < lowerBoundThicknessVariance;
+            var weightFailed = coil.Weight > upperBoundWeightVariance || coil.Weight < lowerBoundWeightVariance;
+
+            var coilInspectionResult = new CoilInspectionResults() { Coil = coil};
+
+            if (widthFailed)
+                coilInspectionResult.MeasurementsFailed.Add("Width");
+            if(thicknessFaild)
+                coilInspectionResult.MeasurementsFailed.Add("Thickness");
+            if(weightFailed)
+                coilInspectionResult.MeasurementsFailed.Add("Weight");
+
+            if (!widthFailed && !thicknessFaild && !weightFailed)
+            {
+                coilInspectionResult.PassedInspection = true;
+                inspectionResults.Add(coilInspectionResult);
+            }
+            else
+            {
+                coilInspectionResult.PassedInspection = false;
+                inspectionResults.Add(coilInspectionResult);
+            }
+        }
+
+        return inspectionResults;
+    }
+
+    private async Task ReleaseOrHoldCoils(List<CoilInspectionResults> coilInspectionResults)
+    {
+        foreach (var results in coilInspectionResults)
+        {
+            var passedInspectionNotes = $"Target production specifications met.";
+            var failedInspectionNotes = $"Target specifications not met for {string.Join(",", results.MeasurementsFailed)}.";
+
+            var inspection = new CreateQualityInspectionRequest()
+            {
+                CoilId = results.Coil.Id,
+                Result = results.PassedInspection ? "Passed" : "Failed",
+                ThicknessMeasured = results.Coil.Thickness,
+                WeightMeasured = results.Coil.Weight,
+                WidthMeasured = results.Coil.Width,
+                Notes = results.PassedInspection ? passedInspectionNotes : failedInspectionNotes,
+                InspectorName = "David Lee",
+                SurfaceQuality = "Good"
+            };
+
+            await qualityInspectionAPi.CreateAsync(inspection);
+
+            var eventType = results.PassedInspection ? "Quality Released" : "Quality Hold";
+            var coilEventRequest = new CreateProductionEventRequest() 
+            { 
+                CoilId = results.Coil.Id, 
+                EquipmentId = null, 
+                EventDate = DateTime.Today, 
+                EventType = eventType, 
+                OperatorName = "Thomas Lee", 
+                Notes = results.PassedInspection ? passedInspectionNotes : failedInspectionNotes
+            };
+            await productionEventApi.CreateAsync(coilEventRequest);
         }
     }
 }
