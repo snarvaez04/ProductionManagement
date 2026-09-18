@@ -3,18 +3,20 @@ namespace ProductionManagement.Shared.DTOs
 {
     public sealed class CreateCoilRequest
     {
-        public string CoilNumber { get; init; } = string.Empty;
+        public int Id { get; set; }
 
-        public int ProductionOrderId { get; init; }
+        public string CoilNumber { get; set; } = string.Empty;
 
-        public decimal Weight { get; init; }
+        public int ProductionOrderId { get; set; }
 
-        public decimal Width { get; init; }
+        public decimal Weight { get; set; }
 
-        public decimal Thickness { get; init; }
+        public decimal Width { get; set; }
 
-        public string SteelGrade { get; init; } = string.Empty;
+        public decimal Thickness { get; set; }
 
-        public string? CurrentLocation { get; init; }
+        public string SteelGrade { get; set; } = string.Empty;
+
+        public string? CurrentLocation { get; set; }
     }
 }
